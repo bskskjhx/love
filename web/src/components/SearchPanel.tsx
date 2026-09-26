@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
 import type { ChatMeta, Message } from '@/types';
 import { loadChunk } from '@/data';
-import { fmtTimeShort, hueStyle, senderName, localDayRange } from '@/utils';
+import { fmtListDate, fmtTimeShort, hueStyle, senderName, localDayRange } from '@/utils';
 import { renderText } from '@/components/textRender';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { useVisualViewport } from '@/hooks/useVisualViewport';
@@ -26,6 +26,19 @@ const MAX_RESULTS = 2000;
 const PAGE_SIZE = 50;
 const SEARCH_DEBOUNCE_MS = 400;
 
+/**
+ * Date and time for a result row.
+ *
+ * `fmtListDate` already carries the time for today (`14:32`) but only the day for
+ * anything older (`昨天`, `9/21`), so the time is appended only in the latter
+ * case. An archive spans months, and a bare `14:32` says nothing about whether a
+ * hit is from this morning or last year.
+ */
+function resultStamp(seconds: number): string {
+  const day = fmtListDate(seconds);
+  return day.includes(':') ? day : `${day} ${fmtTimeShort(seconds)}`;
+}
+
 export function SearchPanel({ username, meta, onClose, onJumpTo }: SearchPanelProps) {
   const isMobile = useIsMobile();
   const viewport = useVisualViewport();
@@ -46,6 +59,9 @@ export function SearchPanel({ username, meta, onClose, onJumpTo }: SearchPanelPr
   const [failedChunks, setFailedChunks] = useState(0);
   const [shown, setShown] = useState(PAGE_SIZE);
 
+  const inputRef = useRef<HTMLInputElement>(null);
+  const resultsRef = useRef<HTMLDivElement>(null);
+
   /**
    * Monotonic query generation. Every new query (and every unmount) bumps it,
    * so a slow older search can never write over a newer one's results.
@@ -64,6 +80,10 @@ export function SearchPanel({ username, meta, onClose, onJumpTo }: SearchPanelPr
   const hasFilter = terms.length > 0 || filtersActive;
 
   const doSearch = useCallback(async () => {
+    // A new result set is a new list: staying scrolled where the previous query
+    // left off hides the top hits, which are the ones that matter most.
+    if (resultsRef.current) resultsRef.current.scrollTop = 0;
+
     if (!meta || !hasFilter) {
       generationRef.current += 1;
       setResults([]);
@@ -228,7 +248,31 @@ export function SearchPanel({ username, meta, onClose, onJumpTo }: SearchPanelPr
 
   const clearQuery = () => setQuery('');
 
+  const clearFilters = () => {
+    setSender('');
+    setDateFrom('');
+    setDateTo('');
+    setOnlyMedia(false);
+    setQuery('');
+  };
+
   const visibleResults = results.slice(0, shown);
+  const remaining = results.length - shown;
+
+  const scanPercent =
+    progress.total > 0 ? Math.min(100, (progress.done / progress.total) * 100) : 0;
+
+  /**
+   * One line, always on screen. It used to live inside the scroll region, so
+   * scrolling the hits scrolled the progress and the hit count away with them.
+   */
+  const status = searching
+    ? `搜索中… ${progress.done}/${progress.total}`
+    : failedChunks > 0
+      ? `${failedChunks} 个分片读取失败，结果可能不完整`
+      : totalHits > 0
+        ? `共 ${totalHits} 条命中${totalHits > MAX_RESULTS ? `（仅显示前 ${MAX_RESULTS} 条）` : ''}`
+        : '';
 
   // On mobile the sheet tracks the visual viewport exactly, so the soft keyboard
   // never covers the input. `bottom: auto` cancels the base sheet's bottom
@@ -250,6 +294,13 @@ export function SearchPanel({ username, meta, onClose, onJumpTo }: SearchPanelPr
         aria-describedby={undefined}
         onDismiss={onClose}
         style={mobileViewportStyle}
+        // Radix would focus the first tabbable element, which is the close
+        // button, leaving the field one tap away and the keyboard down. A search
+        // sheet should open with the keyboard already up.
+        onOpenAutoFocus={(e) => {
+          e.preventDefault();
+          inputRef.current?.focus();
+        }}
         className="mx-auto flex w-full flex-col gap-0 overflow-hidden p-0 md:h-auto md:max-h-[85vh] md:max-w-lg md:rounded-ios-sheet"
       >
         <SheetHeader className="flex shrink-0 flex-row items-center gap-2 space-y-0 border-b border-separator p-2">
@@ -264,10 +315,11 @@ export function SearchPanel({ username, meta, onClose, onJumpTo }: SearchPanelPr
           <SheetTitle className="min-w-0 truncate text-ios-headline">搜索消息</SheetTitle>
         </SheetHeader>
 
-        <div className="shrink-0 px-3 py-2.5">
+        <div className="shrink-0 px-3 pt-2.5">
           <div className="flex min-h-11 items-center gap-2 rounded-ios-field bg-muted px-3">
             <Search size={16} className="shrink-0 text-muted-foreground" aria-hidden="true" />
             <Input
+              ref={inputRef}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onCompositionStart={() => { composingRef.current = true; }}
@@ -284,7 +336,12 @@ export function SearchPanel({ username, meta, onClose, onJumpTo }: SearchPanelPr
               }}
               placeholder="关键词（空格分隔）"
               aria-label="搜索关键词"
+              inputMode="search"
               enterKeyHint="search"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="none"
+              spellCheck={false}
               className="min-w-0 flex-1 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
             />
             {query && (
@@ -298,85 +355,83 @@ export function SearchPanel({ username, meta, onClose, onJumpTo }: SearchPanelPr
               </button>
             )}
           </div>
-        </div>
 
-        {/* Filters, status and results share one scroll region, so a short
-            viewport can still reach every control and never collapses the
-            results to zero height. */}
-        <div
-          className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
-          style={{ paddingBottom: 'calc(1rem + var(--app-safe-bottom))' }}
-        >
-          <div className="border-b border-separator px-3 pb-3">
-            <button
-              type="button"
-              onClick={() => setShowFilters((v) => !v)}
-              aria-expanded={showFilters}
-              className="mobile-touch-target inline-flex items-center gap-1.5 rounded-ios-field px-2 text-ios-footnote text-primary transition active:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <SlidersHorizontal size={14} aria-hidden="true" />
-              筛选{filtersActive ? '（已启用）' : ''}
-            </button>
-
-            {showFilters && (
-              <div className="mt-2 space-y-2">
-                <Input
-                  value={sender}
-                  onChange={(e) => setSender(e.target.value)}
-                  placeholder="发送者"
-                  aria-label="按发送者筛选"
-                  className="min-w-0"
-                />
-                <div className="flex flex-col gap-2 md:flex-row">
-                  <Input
-                    type="date"
-                    value={dateFrom}
-                    onChange={(e) => setDateFrom(e.target.value)}
-                    aria-label="起始日期"
-                    className="min-w-0 flex-1"
-                  />
-                  <Input
-                    type="date"
-                    value={dateTo}
-                    onChange={(e) => setDateTo(e.target.value)}
-                    aria-label="结束日期"
-                    className="min-w-0 flex-1"
-                  />
-                </div>
-                <label className="mobile-touch-target flex cursor-pointer items-center gap-2 rounded-ios-field px-1 text-ios-body">
-                  <input
-                    type="checkbox"
-                    checked={onlyMedia}
-                    onChange={(e) => setOnlyMedia(e.target.checked)}
-                    className="h-4 w-4 shrink-0 accent-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  />
-                  <span>仅媒体</span>
-                </label>
-              </div>
+          {/* Fixed-height track so the bar appearing cannot nudge the results. */}
+          <div className="mt-1.5 h-[3px] overflow-hidden rounded-full" aria-hidden="true">
+            {searching && (
+              <div
+                className="h-full rounded-full bg-primary transition-[width] duration-200 ease-out"
+                style={{ width: `${scanPercent}%` }}
+              />
             )}
           </div>
+        </div>
 
+        <div className="flex min-h-[18px] shrink-0 items-center gap-2 px-3 pt-1.5">
+          <p className="min-w-0 flex-1 text-ios-caption1 text-muted-foreground" role="status">
+            {status}
+          </p>
+          <button
+            type="button"
+            onClick={() => setShowFilters((v) => !v)}
+            aria-expanded={showFilters}
+            className="mobile-touch-target -mr-2 flex shrink-0 items-center gap-1.5 rounded-ios-field px-2 text-ios-footnote text-primary transition active:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <SlidersHorizontal size={14} aria-hidden="true" />
+            筛选{filtersActive ? '（已启用）' : ''}
+          </button>
+        </div>
+
+        {/* Capped and internally scrollable: expanding the filters on a short
+            viewport must not squeeze the results to nothing. */}
+        {showFilters && (
+          <div className="max-h-[45%] shrink-0 overflow-y-auto overscroll-contain px-3 pb-2.5 pt-1.5">
+            <div className="space-y-2">
+              <Input
+                value={sender}
+                onChange={(e) => setSender(e.target.value)}
+                placeholder="发送者"
+                aria-label="按发送者筛选"
+                autoComplete="off"
+                className="min-w-0"
+              />
+              <div className="flex flex-col gap-2 md:flex-row">
+                <Input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  aria-label="起始日期"
+                  className="min-w-0 flex-1"
+                />
+                <Input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  aria-label="结束日期"
+                  className="min-w-0 flex-1"
+                />
+              </div>
+              <label className="mobile-touch-target flex cursor-pointer items-center gap-2 rounded-ios-field px-1 text-ios-body">
+                <input
+                  type="checkbox"
+                  checked={onlyMedia}
+                  onChange={(e) => setOnlyMedia(e.target.checked)}
+                  className="h-4 w-4 shrink-0 accent-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                />
+                <span>仅媒体</span>
+              </label>
+            </div>
+          </div>
+        )}
+
+        <div
+          ref={resultsRef}
+          className="min-h-0 flex-1 overflow-y-auto overscroll-contain border-t border-separator"
+          style={{ paddingBottom: 'calc(1rem + var(--app-safe-bottom))' }}
+        >
           {!hasFilter && (
             <p className="px-3 py-6 text-center text-ios-subhead text-muted-foreground">
               输入关键词或设置筛选条件开始搜索
-            </p>
-          )}
-
-          {hasFilter && searching && (
-            <p className="px-3 py-1.5 text-ios-caption1 text-muted-foreground" role="status">
-              搜索中… {progress.done}/{progress.total}
-            </p>
-          )}
-
-          {hasFilter && !searching && failedChunks > 0 && (
-            <p className="px-3 py-1.5 text-ios-caption1 text-destructive" role="status">
-              {failedChunks} 个分片读取失败，结果可能不完整
-            </p>
-          )}
-
-          {hasFilter && !searching && totalHits > 0 && (
-            <p className="px-3 py-1.5 text-ios-caption1 text-muted-foreground" role="status">
-              共 {totalHits} 条命中{totalHits > MAX_RESULTS ? `（仅显示前 ${MAX_RESULTS} 条）` : ''}
             </p>
           )}
 
@@ -398,7 +453,7 @@ export function SearchPanel({ username, meta, onClose, onJumpTo }: SearchPanelPr
                     {senderName(r.msg)}
                   </span>
                   <span className="shrink-0 text-ios-caption2 text-muted-foreground">
-                    {fmtTimeShort(r.msg.d)}
+                    {resultStamp(r.msg.d)}
                   </span>
                 </div>
                 {r.snippet ? (
@@ -417,20 +472,34 @@ export function SearchPanel({ username, meta, onClose, onJumpTo }: SearchPanelPr
             </button>
           ))}
 
-          {results.length > shown && (
-            <button
-              type="button"
-              onClick={() => setShown((s) => s + PAGE_SIZE)}
-              className="mobile-touch-target flex w-full items-center justify-center px-3 text-ios-subhead text-primary transition active:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              加载更多
-            </button>
+          {remaining > 0 && (
+            <div className="flex flex-col items-center gap-0.5 py-1">
+              <button
+                type="button"
+                onClick={() => setShown((s) => s + PAGE_SIZE)}
+                className="mobile-touch-target px-3 text-ios-subhead text-primary transition active:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                加载更多
+              </button>
+              <span className="text-ios-caption1 text-muted-foreground">还有 {remaining} 条</span>
+            </div>
           )}
 
           {hasFilter && !searching && results.length === 0 && (
-            <p className="px-3 py-8 text-center text-ios-subhead text-muted-foreground">
-              {failedChunks > 0 ? '分片读取失败，未能完成搜索' : '无匹配结果'}
-            </p>
+            <div className="flex flex-col items-center gap-3 px-3 py-8 text-center">
+              <p className="text-ios-subhead text-muted-foreground">
+                {failedChunks > 0 ? '分片读取失败，未能完成搜索' : '无匹配结果'}
+              </p>
+              {filtersActive && (
+                <button
+                  type="button"
+                  onClick={clearFilters}
+                  className="mobile-touch-target text-ios-subhead text-primary transition active:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  清除筛选
+                </button>
+              )}
+            </div>
           )}
         </div>
       </SheetContent>
