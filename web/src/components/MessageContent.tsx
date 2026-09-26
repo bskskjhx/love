@@ -50,7 +50,7 @@ function ReplyRef({ msgId, messagesById, onJump }: { msgId: number; messagesById
       type="button"
       onClick={() => onJump(msgId)}
       aria-label={`跳转到被回复的消息 #${msgId}`}
-      className="block w-full min-w-0 rounded-r border-l-2 border-primary bg-accent px-2 py-1 text-left text-xs text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="block w-full min-w-0 rounded-r border-l-2 border-primary bg-accent px-2 py-1 text-left text-xs text-muted-foreground transition-opacity active:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <span className="text-primary">#{msgId}</span>
       {previewText && <span className="ml-1 break-words">{previewText}</span>}
@@ -96,7 +96,7 @@ function MediaContent({ msg, username, onOpenLightbox }: { msg: Message; usernam
         type="button"
         onClick={() => onOpenLightbox([{ type: 'image', src: mediaUrl, msgId: msg.i }], 0)}
         aria-label="查看图片"
-        className="block max-w-full overflow-hidden rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="block max-w-full overflow-hidden rounded-lg transition-opacity active:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <img
           src={mediaUrl}
@@ -133,7 +133,7 @@ function MediaContent({ msg, username, onOpenLightbox }: { msg: Message; usernam
         type="button"
         onClick={() => onOpenLightbox([{ type: 'video', src: mediaUrl, poster: mediaUrl.replace('.mp4', '.jpg'), dur: msg.dur, msgId: msg.i }], 0)}
         aria-label="播放视频"
-        className="relative block max-w-full overflow-hidden rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="relative block max-w-full overflow-hidden rounded-lg transition-opacity active:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <img
           src={mediaUrl.replace('.mp4', '.jpg')}
@@ -167,7 +167,7 @@ function MediaContent({ msg, username, onOpenLightbox }: { msg: Message; usernam
       <a
         href={mediaUrl}
         download={msg.doc || `file_${msg.i}.${ext}`}
-        className="flex min-w-0 items-center gap-2 rounded-lg bg-muted px-3 py-2 text-sm transition hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="flex min-w-0 items-center gap-2 rounded-lg bg-muted px-3 py-2 text-sm transition hover:bg-accent active:bg-accent/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <Download size={18} className="shrink-0 text-muted-foreground" aria-hidden="true" />
         <div className="flex min-w-0 flex-col">
@@ -258,7 +258,7 @@ function WebPreviewView({ wp }: { wp: NonNullable<Message['wp']> }) {
       href={wp.url}
       target="_blank"
       rel="noopener noreferrer"
-      className="block min-w-0 rounded-lg border border-border p-2 text-xs transition hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="block min-w-0 rounded-lg border border-border p-2 text-xs transition hover:bg-accent active:bg-accent/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <p className="break-words font-medium text-foreground">{wp.title || domain}</p>
       {wp.desc && <p className="mt-0.5 line-clamp-3 break-words text-muted-foreground">{wp.desc}</p>}

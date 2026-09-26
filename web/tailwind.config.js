@@ -1,6 +1,13 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
+  // On a touch screen there is no pointer to leave, so a `hover:` style latches
+  // on after a tap and stays until something else is tapped. This wraps every
+  // hover variant in `@media (hover: hover)`, leaving `active:` to carry the
+  // pressed feedback on touch devices.
+  future: {
+    hoverOnlyWhenSupported: true,
+  },
   theme: {
     extend: {
       colors: {

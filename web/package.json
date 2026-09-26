@@ -7,6 +7,7 @@
     "dev": "vite",
     "dev:mobile": "vite --mode mobile-fixture --host 127.0.0.1 --port 5173 --strictPort",
     "build": "vite build",
+    "icons:generate": "node scripts/generate-icons.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
     "test:fixtures": "node --test dev/mobile-fixtures.test.mjs",

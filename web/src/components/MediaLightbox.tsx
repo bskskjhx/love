@@ -3,6 +3,7 @@ import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { X, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
 import type { LightboxItem } from '@/types';
 import { useRestoreFocus } from '@/hooks/useRestoreFocus';
+import { useBackButtonClose } from '@/hooks/useBackButtonClose';
 import { ZoomableImage } from '@/components/ZoomableImage';
 
 interface MediaLightboxProps {
@@ -17,6 +18,7 @@ export function MediaLightbox({ items, start, onClose, username }: MediaLightbox
     items.length === 0 ? 0 : Math.min(Math.max(start, 0), items.length - 1)
   );
   const onCloseAutoFocus = useRestoreFocus();
+  useBackButtonClose(true, onClose);
 
   // Keep the index valid if the array is swapped underneath us.
   useEffect(() => {
@@ -101,7 +103,7 @@ export function MediaLightbox({ items, start, onClose, username }: MediaLightbox
                 onClick={(e) => { e.stopPropagation(); prev(); }}
                 disabled={!hasPrev}
                 aria-label="上一张"
-                className="mobile-touch-target absolute top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white disabled:opacity-30 disabled:hover:bg-white/10"
+                className="mobile-touch-target absolute top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 active:bg-white/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white disabled:opacity-30 disabled:hover:bg-white/10"
                 style={{ left: 'calc(var(--app-safe-left) + 0.5rem)' }}
               >
                 <ChevronLeft size={24} aria-hidden="true" />
@@ -111,7 +113,7 @@ export function MediaLightbox({ items, start, onClose, username }: MediaLightbox
                 onClick={(e) => { e.stopPropagation(); next(); }}
                 disabled={!hasNext}
                 aria-label="下一张"
-                className="mobile-touch-target absolute top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white disabled:opacity-30 disabled:hover:bg-white/10"
+                className="mobile-touch-target absolute top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 active:bg-white/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white disabled:opacity-30 disabled:hover:bg-white/10"
                 style={{ right: 'calc(var(--app-safe-right) + 0.5rem)' }}
               >
                 <ChevronRight size={24} aria-hidden="true" />
@@ -121,7 +123,7 @@ export function MediaLightbox({ items, start, onClose, username }: MediaLightbox
 
           <DialogPrimitive.Close
             aria-label="关闭"
-            className="mobile-touch-target absolute flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            className="mobile-touch-target absolute flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 active:bg-white/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
             style={{
               top: 'calc(var(--app-safe-top) + 0.5rem)',
               right: 'calc(var(--app-safe-right) + 0.5rem)',
@@ -157,7 +159,7 @@ function VideoView({ item, username }: { item: LightboxItem; username?: string }
             href={`https://t.me/${username}/${item.msgId}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="mobile-touch-target flex items-center gap-1 rounded-lg bg-white/10 px-3 text-sm hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            className="mobile-touch-target flex items-center gap-1 rounded-lg bg-white/10 px-3 text-sm transition hover:bg-white/20 active:bg-white/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
           >
             <ExternalLink size={14} aria-hidden="true" /> 在 Telegram 中打开
           </a>

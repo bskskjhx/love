@@ -6,6 +6,7 @@ import { Avatar } from '@/components/Avatar';
 import { fmtDateFull } from '@/utils';
 import { useCopyFeedback } from '@/hooks/useCopyFeedback';
 import { useRestoreFocus } from '@/hooks/useRestoreFocus';
+import { useBackButtonClose } from '@/hooks/useBackButtonClose';
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from '@/components/ui/sheet';
@@ -26,6 +27,7 @@ export function UserProfilePopup({ username, userId, onClose, avatarUrl }: UserP
   const [name, setName] = useState<string>('');
   const [copied, copy] = useCopyFeedback<boolean>(COPY_FEEDBACK_MS);
   const onCloseAutoFocus = useRestoreFocus();
+  useBackButtonClose(true, onClose);
 
   useEffect(() => {
     let cancelled = false;
@@ -53,6 +55,7 @@ export function UserProfilePopup({ username, userId, onClose, avatarUrl }: UserP
         showCloseButton={false}
         aria-describedby={undefined}
         onCloseAutoFocus={onCloseAutoFocus}
+        onDismiss={onClose}
         className="mx-auto flex w-full flex-col overflow-hidden rounded-t-2xl p-0 sm:max-w-md sm:rounded-2xl"
       >
         {/* Fixed header; the back button is this sheet's labelled close entry. */}
@@ -61,7 +64,7 @@ export function UserProfilePopup({ username, userId, onClose, avatarUrl }: UserP
             type="button"
             onClick={onClose}
             aria-label="关闭用户资料"
-            className="mobile-touch-target flex shrink-0 items-center justify-center rounded-full hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="mobile-touch-target flex shrink-0 items-center justify-center rounded-full transition hover:bg-accent active:bg-accent/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <ArrowLeft size={20} aria-hidden="true" />
           </button>
@@ -107,7 +110,7 @@ export function UserProfilePopup({ username, userId, onClose, avatarUrl }: UserP
                     <button
                       type="button"
                       onClick={copyId}
-                      className="flex w-full min-w-0 items-center justify-between gap-2 rounded-lg bg-secondary px-3 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      className="flex w-full min-w-0 items-center justify-between gap-2 rounded-lg bg-secondary px-3 py-2 transition-colors active:bg-secondary/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       <span className="shrink-0 text-muted-foreground">用户ID</span>
                       <span className="flex min-w-0 items-center gap-1.5 text-foreground">

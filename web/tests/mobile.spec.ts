@@ -1,9 +1,10 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import {
   SAMPLE,
   VIEWPORTS,
   collectErrors,
   delayRequests,
+  dragSheetGrabber,
   expectMobileInputFontSize,
   expectNoAppErrors,
   expectNoHorizontalOverflow,
@@ -358,6 +359,132 @@ test.describe('overlays', () => {
     await expectNoHorizontalOverflow(page, 'search panel');
     await expectMobileInputFontSize(page);
     await page.getByRole('button', { name: '关闭搜索' }).click();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Hardware Back closes the topmost overlay
+// ---------------------------------------------------------------------------
+
+test.describe('hardware back', () => {
+  /**
+   * `history.back()` via evaluate rather than `page.goBack()`: the pushed entry
+   * carries the *same* URL, so there is no navigation for Playwright's own
+   * goBack to wait on. This drives the identical popstate path a phone's Back
+   * button drives.
+   */
+  const pressBack = (page: Page) => page.evaluate(() => window.history.back());
+
+  test('closes the overlay without disturbing the route', async ({ page }) => {
+    const errors = collectErrors(page);
+    await openChat(page, 'mobile_demo');
+    await page.getByRole('button', { name: '搜索消息' }).click();
+    await expect(page.getByLabel('搜索关键词')).toBeVisible();
+
+    await pressBack(page);
+
+    await expect(page.getByLabel('搜索关键词')).toBeHidden();
+    // The sheet's entry carried the same URL on purpose: the deep link must not
+    // move underneath the user.
+    expect(new URL(page.url()).hash).toBe('#/mobile_demo');
+    await expect(page.locator('[data-msg-id]').first()).toBeVisible();
+    expectNoAppErrors(errors);
+  });
+
+  test('gives its history entry back when closed from the UI', async ({ page }) => {
+    // Enter the chat by tapping, so the router owns a real entry underneath the
+    // dialog's. A leaked dialog entry would make the Back below land on the chat
+    // instead of the list.
+    await openHash(page, '#/');
+    await page.getByRole('button', { name: /移动端演示群/ }).click();
+    await expect(page.locator('[data-msg-id]').first()).toBeVisible();
+
+    await page.getByRole('button', { name: '跳转到日期' }).click();
+    await page.getByRole('button', { name: '取消' }).click();
+    await expect(page.locator('#date-jump-input')).toBeHidden();
+
+    // The pop the dialog issued on close is asynchronous; let it land before
+    // pressing Back ourselves, or the two would race.
+    await page.waitForTimeout(200);
+    await pressBack(page);
+
+    await expect(page.getByLabel('搜索群聊')).toBeVisible();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Swipe down to dismiss a bottom sheet
+// ---------------------------------------------------------------------------
+
+test.describe('swipe to dismiss', () => {
+  // The grabber only exists where there is no hovering pointer, which is also
+  // the only place the gesture is armed.
+  test.use({ hasTouch: true });
+
+  test('dragging the grabber far enough dismisses the sheet', async ({ page }) => {
+    await openChat(page, 'mobile_demo');
+    await page.getByRole('button', { name: '搜索消息' }).click();
+    await expect(page.getByLabel('搜索关键词')).toBeVisible();
+
+    // The search sheet is full-height, so its threshold is the larger of 80px
+    // and 30% of that height.
+    await dragSheetGrabber(page, 320);
+
+    await expect(page.getByLabel('搜索关键词')).toBeHidden();
+    expect(new URL(page.url()).hash).toBe('#/mobile_demo');
+  });
+
+  test('a drag short of the threshold springs back', async ({ page }) => {
+    await openChat(page, 'mobile_demo');
+    await page.getByRole('button', { name: '搜索消息' }).click();
+    await expect(page.getByLabel('搜索关键词')).toBeVisible();
+
+    await dragSheetGrabber(page, 40);
+
+    await expect(page.getByLabel('搜索关键词')).toBeVisible();
+  });
+
+  test('the grabber is a full touch target', async ({ page }) => {
+    await openChat(page, 'mobile_demo');
+    await page.getByRole('button', { name: '搜索消息' }).click();
+    await expectTouchTargets(page, '[data-sheet-grabber]');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Installable / home-screen assets
+// ---------------------------------------------------------------------------
+
+test.describe('install assets', () => {
+  /**
+   * A plain `GET` per asset. The browser console cannot be used for this:
+   * `expectNoAppErrors` drops every `Failed to load resource` entry, so a 404 on
+   * an icon is invisible from the page. This is the assertion that actually
+   * fails while `public/icons/` is empty — run `npm run icons:generate`.
+   */
+  test('the manifest and every icon it references resolve', async ({ request }) => {
+    const manifestResponse = await request.get('/manifest.webmanifest');
+    expect(manifestResponse.status()).toBe(200);
+
+    const manifest = (await manifestResponse.json()) as {
+      icons: { src: string; sizes: string; purpose?: string }[];
+    };
+    expect(manifest.icons.length).toBeGreaterThan(0);
+
+    const maskable = manifest.icons.filter((icon) => icon.purpose === 'maskable');
+    expect(maskable, 'the manifest should offer a maskable icon').not.toHaveLength(0);
+
+    for (const icon of manifest.icons) {
+      const response = await request.get(`/${icon.src}`);
+      expect(response.status(), `${icon.src} should exist`).toBe(200);
+      expect(response.headers()['content-type'], `${icon.src} type`).toContain('image/png');
+    }
+  });
+
+  test('the apple touch icon resolves', async ({ request }) => {
+    // Referenced from index.html only, so it is not covered by the manifest walk.
+    const response = await request.get('/icons/icon-180.png');
+    expect(response.status()).toBe(200);
   });
 });
 

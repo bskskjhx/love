@@ -132,7 +132,7 @@ export function MessageItem({
             type="button"
             onClick={(e) => { e.stopPropagation(); onOpenProfile(seed || ''); }}
             aria-label={`查看 ${displayName} 的资料`}
-            className="-m-1 shrink-0 self-end rounded-full p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="-m-1 shrink-0 self-end rounded-full p-1 transition-opacity active:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <Avatar src={avatarSrc} name={displayName} seed={seed} size={32} />
           </button>
@@ -147,7 +147,7 @@ export function MessageItem({
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onOpenProfile(seed || ''); }}
                 aria-label={`查看 ${displayName} 的资料`}
-                className="min-w-0 truncate text-left text-xs font-medium hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="min-w-0 truncate text-left text-xs font-medium hover:underline active:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 style={{ color: nameColor(seed, msg.n) }}
               >
                 {displayName}
@@ -159,7 +159,7 @@ export function MessageItem({
               )}
             </div>
           )}
-          <div className="min-w-0 max-w-full break-words rounded-lg bg-card px-2.5 py-1.5 shadow-sm">
+          <div className="min-w-0 max-w-full break-words rounded-lg bg-card px-2.5 py-1.5 shadow-sm transition-colors active:bg-secondary">
             {albumItems && albumItems.length >= 2 ? (
               <AlbumContent items={albumItems} onOpenLightbox={onOpenLightbox} />
             ) : (

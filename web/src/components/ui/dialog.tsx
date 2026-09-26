@@ -60,7 +60,7 @@ const DialogContent = React.forwardRef<
       {showCloseButton && (
         // Portalled outside the app shell, so it consumes its own safe insets.
         <DialogPrimitive.Close
-          className="mobile-touch-target absolute flex h-9 w-9 items-center justify-center rounded-full opacity-70 ring-offset-background transition-colors hover:bg-accent hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none"
+          className="mobile-touch-target absolute flex h-9 w-9 items-center justify-center rounded-full opacity-70 ring-offset-background transition-colors hover:bg-accent hover:opacity-100 active:bg-accent/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none"
           style={{
             top: 'calc(var(--app-safe-top) + 0.5rem)',
             right: 'calc(var(--app-safe-right) + 0.5rem)',

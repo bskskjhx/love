@@ -1,6 +1,14 @@
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const CACHE_NAME = `tg-archive-${CACHE_VERSION}`;
-const PRECACHE = ['./', './index.html', './manifest.webmanifest'];
+const PRECACHE = [
+  './',
+  './index.html',
+  './manifest.webmanifest',
+  './icons/icon-180.png',
+  './icons/icon-192.png',
+  './icons/icon-512.png',
+  './icons/icon-512-maskable.png',
+];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(

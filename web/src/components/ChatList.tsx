@@ -124,7 +124,7 @@ export function ChatList({ activeUsername, onSelect }: ChatListProps) {
                 type="button"
                 onClick={() => setQuery('')}
                 aria-label="清空搜索"
-                className="mobile-touch-target flex shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="mobile-touch-target flex shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-accent active:bg-accent/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <X size={16} aria-hidden="true" />
               </button>
@@ -139,8 +139,8 @@ export function ChatList({ activeUsername, onSelect }: ChatListProps) {
                 aria-pressed={timeFilter === value}
                 className={`mobile-touch-target inline-flex items-center justify-center rounded-full px-3 py-1.5 text-xs transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                   timeFilter === value
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-muted-foreground hover:bg-accent'
+                    ? 'bg-primary text-primary-foreground active:bg-primary/80'
+                    : 'bg-muted text-muted-foreground hover:bg-accent active:bg-accent/70'
                 }`}
               >
                 {label}
@@ -171,7 +171,7 @@ export function ChatList({ activeUsername, onSelect }: ChatListProps) {
             <button
               type="button"
               onClick={() => fetchChats()}
-              className="mobile-touch-target mt-2 inline-flex items-center justify-center px-3 text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="mobile-touch-target mt-2 inline-flex items-center justify-center px-3 text-primary transition-opacity active:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               重试
             </button>
@@ -188,7 +188,7 @@ export function ChatList({ activeUsername, onSelect }: ChatListProps) {
                 <button
                   type="button"
                   onClick={clearFilters}
-                  className="mobile-touch-target mt-2 inline-flex items-center justify-center px-3 text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="mobile-touch-target mt-2 inline-flex items-center justify-center px-3 text-primary transition-opacity active:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   清除条件
                 </button>
@@ -207,7 +207,7 @@ export function ChatList({ activeUsername, onSelect }: ChatListProps) {
                 type="button"
                 onClick={() => onSelect(c.username)}
                 aria-current={isActive ? 'true' : undefined}
-                className={`flex w-full min-w-0 items-center gap-3 px-3 py-2.5 text-left transition hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${
+                className={`flex w-full min-w-0 items-center gap-3 px-3 py-2.5 text-left transition hover:bg-accent active:bg-accent/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${
                   isActive ? 'bg-accent' : ''
                 }`}
               >

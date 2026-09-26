@@ -138,7 +138,7 @@ export function VoicePlayer({ src, dur }: VoicePlayerProps) {
         onClick={toggle}
         aria-label={playing ? '暂停语音' : '播放语音'}
         title={blocked ? '浏览器阻止了自动播放，请再点一次' : undefined}
-        className="mobile-touch-target flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        className="mobile-touch-target flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition hover:bg-primary/90 active:bg-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       >
         {playing ? <Pause size={18} aria-hidden="true" /> : <Play size={18} aria-hidden="true" />}
       </button>

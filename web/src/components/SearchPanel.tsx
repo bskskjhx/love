@@ -6,6 +6,7 @@ import { fmtTimeShort, nameColor, senderName } from '@/utils';
 import { renderText } from '@/components/textRender';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { useVisualViewport } from '@/hooks/useVisualViewport';
+import { useBackButtonClose } from '@/hooks/useBackButtonClose';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 
@@ -28,6 +29,7 @@ const SEARCH_DEBOUNCE_MS = 400;
 export function SearchPanel({ username, meta, onClose, onJumpTo }: SearchPanelProps) {
   const isMobile = useIsMobile();
   const viewport = useVisualViewport();
+  useBackButtonClose(true, onClose);
 
   const [query, setQuery] = useState('');
   const [sender, setSender] = useState('');
@@ -246,6 +248,7 @@ export function SearchPanel({ username, meta, onClose, onJumpTo }: SearchPanelPr
         side="bottom"
         showCloseButton={false}
         aria-describedby={undefined}
+        onDismiss={onClose}
         style={mobileViewportStyle}
         className="mx-auto flex w-full flex-col gap-0 overflow-hidden p-0 md:h-auto md:max-h-[85vh] md:max-w-lg md:rounded-2xl"
       >
@@ -254,7 +257,7 @@ export function SearchPanel({ username, meta, onClose, onJumpTo }: SearchPanelPr
             type="button"
             onClick={onClose}
             aria-label="关闭搜索"
-            className="mobile-touch-target flex shrink-0 items-center justify-center rounded-full hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="mobile-touch-target flex shrink-0 items-center justify-center rounded-full transition hover:bg-accent active:bg-accent/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <X size={20} aria-hidden="true" />
           </button>
@@ -289,7 +292,7 @@ export function SearchPanel({ username, meta, onClose, onJumpTo }: SearchPanelPr
                 type="button"
                 onClick={clearQuery}
                 aria-label="清空关键词"
-                className="mobile-touch-target flex shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="mobile-touch-target flex shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-accent active:bg-accent/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <X size={16} aria-hidden="true" />
               </button>
@@ -309,7 +312,7 @@ export function SearchPanel({ username, meta, onClose, onJumpTo }: SearchPanelPr
               type="button"
               onClick={() => setShowFilters((v) => !v)}
               aria-expanded={showFilters}
-              className="mobile-touch-target inline-flex items-center gap-1.5 rounded-lg px-2 text-xs text-muted-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="mobile-touch-target inline-flex items-center gap-1.5 rounded-lg px-2 text-xs text-muted-foreground transition hover:bg-accent active:bg-accent/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <SlidersHorizontal size={14} aria-hidden="true" />
               筛选{filtersActive ? '（已启用）' : ''}
@@ -382,7 +385,7 @@ export function SearchPanel({ username, meta, onClose, onJumpTo }: SearchPanelPr
               key={r.msg.i}
               type="button"
               onClick={() => onJumpTo(r.msg.i)}
-              className="flex w-full gap-2 border-b border-border px-3 py-2 text-left transition hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+              className="flex w-full gap-2 border-b border-border px-3 py-2 text-left transition hover:bg-accent active:bg-accent/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
             >
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
@@ -416,7 +419,7 @@ export function SearchPanel({ username, meta, onClose, onJumpTo }: SearchPanelPr
             <button
               type="button"
               onClick={() => setShown((s) => s + PAGE_SIZE)}
-              className="mobile-touch-target flex w-full items-center justify-center px-3 text-xs text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="mobile-touch-target flex w-full items-center justify-center px-3 text-xs text-primary transition-opacity active:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               加载更多
             </button>

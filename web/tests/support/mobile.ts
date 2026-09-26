@@ -173,19 +173,57 @@ export function isMobileViewport(page: Page): boolean {
 }
 
 /**
- * Asserts nothing the app itself raised. Static-asset 404s (the repo ships no
- * PWA icons) are filtered out because they are a known pre-existing gap, not a
- * regression introduced by the mobile work.
+ * Drags a bottom sheet's grabber `distance` CSS pixels downwards.
+ *
+ * Synthetic touch pointer events rather than `page.mouse`: the gesture is
+ * deliberately touch-only (see `useSheetDrag`), so a mouse drag is ignored by
+ * design and would prove nothing. Several `pointermove`s are sent so the handler
+ * sees real travel rather than one instantaneous jump.
+ *
+ * The caller is responsible for running under `hasTouch` — the grabber is hidden
+ * wherever a hovering pointer exists.
+ */
+export async function dragSheetGrabber(page: Page, distance: number) {
+  const grabber = page.locator('[data-sheet-grabber]');
+  await expect(grabber, 'grabber should be present').toBeVisible();
+
+  const box = await grabber.boundingBox();
+  expect(box, 'grabber should have a box').toBeTruthy();
+  const x = Math.round(box!.x + box!.width / 2);
+  const y = Math.round(box!.y + box!.height / 2);
+
+  const pointer = (type: string, clientY: number) =>
+    grabber.dispatchEvent(type, {
+      pointerType: 'touch',
+      isPrimary: true,
+      pointerId: 7,
+      clientX: x,
+      clientY,
+      bubbles: true,
+    });
+
+  await pointer('pointerdown', y);
+  for (const fraction of [0.4, 0.7, 1]) {
+    await pointer('pointermove', Math.round(y + distance * fraction));
+  }
+  await pointer('pointerup', Math.round(y + distance));
+}
+
+/**
+ * Asserts nothing the app itself raised.
+ *
+ * Resource failures are filtered out wholesale — `Failed to load resource` covers
+ * every 404, so a missing icon cannot be caught from here. `install assets` in
+ * mobile.spec.ts is what actually guards the manifest and its icons.
  */
 export function expectNoAppErrors(errors: string[]) {
   const appErrors = errors.filter(
-    (entry) =>
-      !/Failed to load resource|net::ERR|404 \(Not Found\)|favicon|icons\/icon|manifest/i.test(entry)
+    (entry) => !/Failed to load resource|net::ERR|404 \(Not Found\)|favicon/i.test(entry)
   );
   expect(appErrors, `unexpected app errors:\n${appErrors.join('\n')}`).toEqual([]);
 }
 
-/** Message ids used across the suite; see web/MOBILE-TESTING.md. */
+/** Message ids used across the suite; see dev/mobile-fixtures.mjs. */
 export const SAMPLE = {
   deepLinkId: 101,
   pinnedId: 42,

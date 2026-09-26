@@ -360,7 +360,7 @@ export function ChatDetail({ username, initialMsgId, onBack }: ChatDetailProps) 
           type="button"
           onClick={() => jumpTo(meta.pinned_id!)}
           aria-label="跳转到置顶消息"
-          className="mobile-touch-target flex shrink-0 items-center gap-2 border-b border-border bg-yellow-50 px-3 py-1.5 text-left text-xs text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+          className="mobile-touch-target flex shrink-0 items-center gap-2 border-b border-border bg-yellow-50 px-3 py-1.5 text-left text-xs text-muted-foreground transition-colors hover:bg-yellow-100 active:bg-yellow-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
         >
           <span className="shrink-0 text-yellow-600" aria-hidden="true">📌</span>
           <span className="min-w-0 truncate">{pinnedPreview}</span>
@@ -407,7 +407,7 @@ export function ChatDetail({ username, initialMsgId, onBack }: ChatDetailProps) 
                   type="button"
                   onClick={loadOlder}
                   disabled={busy}
-                  className="mobile-touch-target inline-flex items-center justify-center px-3 text-xs text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+                  className="mobile-touch-target inline-flex items-center justify-center px-3 text-xs text-primary transition-opacity active:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
                 >
                   {busy ? '加载中…' : '加载更早消息'}
                 </button>
@@ -447,7 +447,7 @@ export function ChatDetail({ username, initialMsgId, onBack }: ChatDetailProps) 
                   type="button"
                   onClick={loadNewer}
                   disabled={busy}
-                  className="mobile-touch-target inline-flex items-center justify-center px-3 text-xs text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+                  className="mobile-touch-target inline-flex items-center justify-center px-3 text-xs text-primary transition-opacity active:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
                 >
                   {busy ? '加载中…' : '加载更新消息'}
                 </button>
@@ -464,7 +464,7 @@ export function ChatDetail({ username, initialMsgId, onBack }: ChatDetailProps) 
           type="button"
           onClick={scrollToBottom}
           aria-label="回到最新消息"
-          className="mobile-touch-target absolute bottom-4 right-4 z-[var(--app-z-floating)] flex items-center justify-center rounded-full bg-card shadow-lg transition hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="mobile-touch-target absolute bottom-4 right-4 z-[var(--app-z-floating)] flex items-center justify-center rounded-full bg-card shadow-lg transition hover:bg-accent active:bg-accent/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <ChevronUp size={20} className="text-muted-foreground" aria-hidden="true" />
         </button>

@@ -3,6 +3,7 @@ import type { Message } from '@/types';
 import { isAnon } from '@/utils';
 import { useCopyFeedback } from '@/hooks/useCopyFeedback';
 import { useRestoreFocus } from '@/hooks/useRestoreFocus';
+import { useBackButtonClose } from '@/hooks/useBackButtonClose';
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from '@/components/ui/sheet';
@@ -20,6 +21,7 @@ const COPY_FEEDBACK_MS = 1500;
 export function ActionMenu({ msg, username, onClose, onJumpTo }: ActionMenuProps) {
   const [copied, copy] = useCopyFeedback<string>(COPY_FEEDBACK_MS);
   const onCloseAutoFocus = useRestoreFocus();
+  useBackButtonClose(true, onClose);
 
   const showCopyLink = !!username;
   const showCopyText = !!msg.t;
@@ -48,6 +50,7 @@ export function ActionMenu({ msg, username, onClose, onJumpTo }: ActionMenuProps
         showCloseButton={false}
         aria-describedby={undefined}
         onCloseAutoFocus={onCloseAutoFocus}
+        onDismiss={onClose}
         className="mx-auto w-full max-w-sm rounded-t-2xl p-2 sm:rounded-2xl"
         style={{ paddingBottom: 'calc(0.5rem + var(--app-safe-bottom))' }}
       >
@@ -91,7 +94,7 @@ function MenuItem({
     <button
       type="button"
       onClick={onClick}
-      className="mobile-touch-target flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+      className="mobile-touch-target flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition hover:bg-accent active:bg-accent/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
     >
       <Icon size={18} className="shrink-0 text-muted-foreground" aria-hidden="true" />
       <span className="min-w-0 break-words">{copied ? '已复制' : label}</span>

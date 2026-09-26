@@ -7,8 +7,9 @@ const ARTIFACTS = '../.artifacts/mobile-checks/M09';
  * Drives the mobile-fixture dev server started by `npm run dev:mobile`.
  *
  * Real pinch gestures, the system soft keyboard and native safe-area insets are
- * not reproducible here — see web/MOBILE-TESTING.md section 6 for the manual
- * checklist that covers them.
+ * not reproducible here. `simulateSafeArea` only rewrites the safe-area CSS
+ * variables; it verifies the layout maths, not a real notch. Those cases stay on
+ * the manual checklist for a physical device.
  */
 export default defineConfig({
   testDir: './tests',

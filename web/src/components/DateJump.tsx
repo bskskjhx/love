@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { ChatMeta } from '@/types';
 import { loadChunk } from '@/data';
 import { useRestoreFocus } from '@/hooks/useRestoreFocus';
+import { useBackButtonClose } from '@/hooks/useBackButtonClose';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
@@ -20,6 +21,7 @@ export function DateJump({ meta, username, onClose, onJump }: DateJumpProps) {
   const [error, setError] = useState<string | null>(null);
   const aliveRef = useRef(true);
   const onCloseAutoFocus = useRestoreFocus();
+  useBackButtonClose(true, onClose);
 
   useEffect(() => () => { aliveRef.current = false; }, []);
 
@@ -114,7 +116,7 @@ export function DateJump({ meta, username, onClose, onJump }: DateJumpProps) {
           <button
             type="button"
             onClick={onClose}
-            className="mobile-touch-target inline-flex items-center justify-center rounded-lg px-3 text-sm text-muted-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="mobile-touch-target inline-flex items-center justify-center rounded-lg px-3 text-sm text-muted-foreground transition hover:bg-accent active:bg-accent/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             取消
           </button>
@@ -122,7 +124,7 @@ export function DateJump({ meta, username, onClose, onJump }: DateJumpProps) {
             type="button"
             onClick={handleJump}
             disabled={!date || busy}
-            className="mobile-touch-target inline-flex items-center justify-center rounded-lg bg-primary px-3 text-sm text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+            className="mobile-touch-target inline-flex items-center justify-center rounded-lg bg-primary px-3 text-sm text-primary-foreground transition hover:bg-primary/90 active:bg-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
           >
             {busy ? '跳转中…' : error ? '重试' : '跳转'}
           </button>

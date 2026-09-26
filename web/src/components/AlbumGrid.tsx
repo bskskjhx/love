@@ -49,7 +49,7 @@ function Thumb({
       type="button"
       onClick={onClick}
       aria-label={`查看第 ${index + 1} / ${total} 张媒体`}
-      className="relative aspect-square w-full overflow-hidden bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+      className="relative aspect-square w-full overflow-hidden bg-muted transition-opacity active:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
     >
       <img
         src={item.thumbSrc}
