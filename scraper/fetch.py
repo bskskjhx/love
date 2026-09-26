@@ -76,6 +76,7 @@ def poll_info(msg):
     poll = msg.poll
     if poll is None:
         return None
+    inner = getattr(poll, "poll", poll)
     media = msg.media
     results = getattr(media, "results", None)
     votes = {}
@@ -83,15 +84,15 @@ def poll_info(msg):
         for r in results.results:
             votes[r.option] = r.voters
     options = []
-    for ans in poll.answers or []:
+    for ans in getattr(inner, "answers", None) or []:
         options.append({"t": text_of(getattr(ans, "text", None)), "v": votes.get(ans.option, 0)})
     if not options:
         return None
     return {
-        "q": text_of(getattr(poll, "question", None)),
+        "q": text_of(getattr(inner, "question", None)),
         "o": options,
-        "c": bool(getattr(poll, "closed", False)),
-        "mc": bool(getattr(poll, "multiple_choice", False)),
+        "c": bool(getattr(inner, "closed", False)),
+        "mc": bool(getattr(inner, "multiple_choice", False)),
     }
 
 
