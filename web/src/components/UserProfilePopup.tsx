@@ -15,6 +15,9 @@ interface UserProfilePopupProps {
   avatarUrl?: string;
 }
 
+/** Long enough to read the toast, short enough not to trail the sheet's exit. */
+const COPY_FEEDBACK_MS = 1800;
+
 export function UserProfilePopup({ username, userId, onClose, avatarUrl }: UserProfilePopupProps) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -54,7 +57,7 @@ export function UserProfilePopup({ username, userId, onClose, avatarUrl }: UserP
     vibrate(10);
     setCopied(true);
     if (copiedTimer.current) clearTimeout(copiedTimer.current);
-    copiedTimer.current = setTimeout(() => setCopied(false), 1500);
+    copiedTimer.current = setTimeout(() => setCopied(false), COPY_FEEDBACK_MS);
   };
 
   const deleted = profile?.x || profile?.dl;
@@ -138,7 +141,6 @@ export function UserProfilePopup({ username, userId, onClose, avatarUrl }: UserP
                       )}
                     </span>
                   </button>
-                  {copied && <p className="text-xs text-green-500">已复制</p>}
                   {profile?.b && (
                     <div className="rounded-lg bg-secondary px-3 py-2">
                       <p className="text-muted-foreground">简介</p>
@@ -156,6 +158,24 @@ export function UserProfilePopup({ username, userId, onClose, avatarUrl }: UserP
                 </div>
               )}
             </>
+          )}
+        </div>
+
+        {/* Copy confirmation. A floating pill pinned to the foot of the sheet
+            reads at a glance and never reflows the card, unlike an inline line.
+            Always mounted so assistive tech announces the change on update.
+            The sheet is portalled outside the app shell, so it owns its inset. */}
+        <div
+          role="status"
+          aria-live="polite"
+          className="pointer-events-none absolute inset-x-0 flex justify-center px-4"
+          style={{ bottom: 'calc(1rem + var(--app-safe-bottom))' }}
+        >
+          {copied && (
+            <span className="flex items-center gap-1.5 rounded-full bg-foreground/90 px-3 py-1.5 text-xs font-medium text-background shadow-lg animate-in fade-in-0 slide-in-from-bottom-2 duration-200 motion-reduce:animate-none">
+              <Check size={14} aria-hidden="true" />
+              已复制用户ID
+            </span>
           )}
         </div>
       </SheetContent>
