@@ -308,6 +308,8 @@ async def run():
         if not await client.is_user_authorized():
             print("TG_SESSION 无效或未登录", file=sys.stderr)
             return 1
+        me = await client.get_me()
+        print("当前账号：%s" % (me.phone or me.username or me.id), flush=True)
         await client.get_dialogs()
         for username in chats:
             try:
