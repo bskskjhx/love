@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { ChevronLeft, Search, Calendar, ChevronUp, Loader2, RefreshCw } from 'lucide-react';
+import { ChevronLeft, Search, Calendar, ChevronUp, Loader2 } from 'lucide-react';
 import type { ChatMeta, Message, LightboxItem, AlbumItem, AvatarIndex } from '@/types';
 import {
   loadMeta, refreshMeta, loadChunk, refreshChunk, loadAvatarIndex,
@@ -8,8 +8,9 @@ import {
   fmtDate, preview, buildUserAvatarUrl, prefersReducedMotion,
 } from '@/utils';
 import { Avatar } from '@/components/Avatar';
+import { PullIndicator } from '@/components/PullIndicator';
 import { useIsMobile } from '@/hooks/useIsMobile';
-import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import { PULL_SETTLE_EASING, PULL_SETTLE_MS, usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { MessageItem, buildAlbumGroups } from '@/components/MessageItem';
 import { MediaLightbox } from '@/components/MediaLightbox';
 import { UserProfilePopup } from '@/components/UserProfilePopup';
@@ -30,9 +31,9 @@ interface ViewState {
   messages: Message[];
 }
 
-/** Pull travel needed before a release refreshes the newest chunk. */
-const PULL_THRESHOLD = 56;
-const PULL_MAX = 70;
+/** Damped travel needed before a release refreshes the newest chunk. */
+const PULL_THRESHOLD = 60;
+const PULL_MAX = 130;
 
 export function ChatDetail({ username, initialMsgId, onBack }: ChatDetailProps) {
   const [meta, setMeta] = useState<ChatMeta | null>(null);
@@ -278,7 +279,7 @@ export function ChatDetail({ username, initialMsgId, onBack }: ChatDetailProps) 
     }
   }, [username]);
 
-  const { distance: pullDist, refreshing, handlers: pullHandlers } = usePullToRefresh({
+  const { offset, progress, refreshing, pulling, handlers: pullHandlers } = usePullToRefresh({
     scrollRef,
     threshold: PULL_THRESHOLD,
     max: PULL_MAX,
@@ -365,16 +366,30 @@ export function ChatDetail({ username, initialMsgId, onBack }: ChatDetailProps) 
         </button>
       )}
 
-      <div className="flex shrink-0 justify-center overflow-hidden" style={{ height: pullDist }}>
-        <RefreshCw size={18} className={`mt-1 text-muted-foreground ${refreshing ? 'animate-spin' : ''}`} aria-hidden="true" />
-      </div>
-
       <div
         ref={scrollRef}
         className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-16"
         onScroll={onScroll}
         {...pullHandlers}
       >
+        <PullIndicator
+          offset={offset}
+          progress={progress}
+          refreshing={refreshing}
+          pulling={pulling}
+        />
+
+        {/* Holds the content down by the pull distance, which is what reveals the
+            indicator above. Animated on release so the list settles back rather
+            than snapping; `none` while a finger is down so it tracks exactly. */}
+        <div
+          aria-hidden="true"
+          style={{
+            height: offset,
+            transition: pulling ? 'none' : `height ${PULL_SETTLE_MS}ms ${PULL_SETTLE_EASING}`,
+          }}
+        />
+
         {loading && (
           <div className="flex items-center justify-center py-8 text-ios-subhead text-muted-foreground">
             <Loader2 size={20} className="mr-2 animate-spin" aria-hidden="true" /> 加载中…

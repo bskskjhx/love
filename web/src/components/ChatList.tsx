@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Search, X, RefreshCw, Moon, Sun } from 'lucide-react';
+import { Search, X, Moon, Sun } from 'lucide-react';
 import type { ChatSummary } from '@/types';
 import { fmtListDate } from '@/utils';
 import { loadChats, refreshChats, loadAvatarIndex } from '@/data';
-import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import { PULL_SETTLE_EASING, PULL_SETTLE_MS, usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { useTheme } from '@/hooks/useTheme';
 import { Avatar } from '@/components/Avatar';
+import { PullIndicator } from '@/components/PullIndicator';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
@@ -22,9 +23,10 @@ const TIME_FILTERS: { value: TimeFilter; label: string; days?: number }[] = [
   { value: '30d', label: '近30天', days: 30 },
 ];
 
-/** Pull-to-refresh travel needed before a release triggers a reload. */
-const PULL_THRESHOLD = 60;
-const PULL_MAX = 80;
+/** Damped travel needed before a release triggers a reload. PULL_MAX is the
+    asymptote the resistance curve approaches, not a hard clamp. */
+const PULL_THRESHOLD = 64;
+const PULL_MAX = 140;
 
 /** The search box only earns its space once the list is long enough to scan. */
 const SEARCH_MIN_CHATS = 6;
@@ -95,7 +97,7 @@ export function ChatList({ activeUsername, onSelect }: ChatListProps) {
     if (chats.length > 0) loadAvatars(chats);
   }, [chats, loadAvatars]);
 
-  const { distance: pullDist, refreshing, handlers: pullHandlers } = usePullToRefresh({
+  const { offset, progress, refreshing, pulling, handlers: pullHandlers } = usePullToRefresh({
     scrollRef: listRef,
     threshold: PULL_THRESHOLD,
     max: PULL_MAX,
@@ -170,17 +172,23 @@ export function ChatList({ activeUsername, onSelect }: ChatListProps) {
         className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-[calc(1.5rem+var(--app-safe-bottom))]"
         {...pullHandlers}
       >
-        {/* `overflow-hidden` is load-bearing: at rest the height is 0 while the
-            icon keeps its own height and a negative margin, so without clipping
-            it escapes the box and reads as a permanently visible refresh button. */}
-        <div className="flex justify-center overflow-hidden" style={{ height: pullDist }}>
-          <RefreshCw
-            size={20}
-            aria-hidden="true"
-            className={`text-muted-foreground transition ${refreshing ? 'animate-spin' : ''}`}
-            style={{ marginTop: pullDist / 2 - 10 }}
-          />
-        </div>
+        <PullIndicator
+          offset={offset}
+          progress={progress}
+          refreshing={refreshing}
+          pulling={pulling}
+        />
+
+        {/* Holds the content down by the pull distance, which is what reveals the
+            indicator above. Animated on release so the list settles back rather
+            than snapping; `none` while a finger is down so it tracks exactly. */}
+        <div
+          aria-hidden="true"
+          style={{
+            height: offset,
+            transition: pulling ? 'none' : `height ${PULL_SETTLE_MS}ms ${PULL_SETTLE_EASING}`,
+          }}
+        />
 
         {loading && (
           <div className="flex items-center justify-center py-8 text-ios-subhead text-muted-foreground">
