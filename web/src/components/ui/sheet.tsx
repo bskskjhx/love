@@ -20,7 +20,7 @@ const SheetOverlay = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SheetPrimitive.Overlay
     className={cn(
-      'fixed inset-0 z-[var(--app-z-overlay)] bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 motion-reduce:animate-none',
+      'fixed inset-0 z-[var(--app-z-overlay)] bg-black/40 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 motion-reduce:animate-none',
       className
     )}
     {...props}
@@ -30,18 +30,16 @@ const SheetOverlay = React.forwardRef<
 SheetOverlay.displayName = SheetPrimitive.Overlay.displayName;
 
 const sheetVariants = cva(
-  'fixed z-[var(--app-z-dialog)] gap-4 bg-background p-6 shadow-lg transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500 data-[state=open]:animate-in data-[state=closed]:animate-out motion-reduce:animate-none motion-reduce:transition-none',
+  'fixed z-[var(--app-z-dialog)] gap-4 bg-card p-6 shadow-lg transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500 data-[state=open]:animate-in data-[state=closed]:animate-out motion-reduce:animate-none motion-reduce:transition-none',
   {
     variants: {
       side: {
-        top: 'inset-x-0 top-0 border-b data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top',
-        // A bottom sheet must never exceed the live viewport, toolbars and
-        // safe areas included, or its last row ends up under the home indicator.
+        top: 'inset-x-0 top-0 rounded-b-ios-sheet border-b border-separator data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top',
         bottom:
-          'inset-x-0 bottom-0 border-t max-h-[calc(100vh-var(--app-safe-top))] supports-[height:100dvh]:max-h-[calc(100dvh-var(--app-safe-top))] data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom',
-        left: 'inset-y-0 left-0 h-full w-3/4 border-r data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left sm:max-w-sm',
+          'inset-x-0 bottom-0 rounded-t-ios-sheet shadow-ios-sheet max-h-[calc(100vh-var(--app-safe-top))] supports-[height:100dvh]:max-h-[calc(100dvh-var(--app-safe-top))] data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom',
+        left: 'inset-y-0 left-0 h-full w-3/4 border-r border-separator data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left sm:max-w-sm',
         right:
-          'inset-y-0 right-0 h-full w-3/4 border-l data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-sm',
+          'inset-y-0 right-0 h-full w-3/4 border-l border-separator data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-sm',
       },
     },
     defaultVariants: {
@@ -50,13 +48,9 @@ const sheetVariants = cva(
   }
 );
 
-/** Travel past which releasing dismisses instead of springing back. */
 const DISMISS_MIN_PX = 80;
-/** Fraction of the sheet's own height that also counts as far enough. */
 const DISMISS_FRACTION = 0.3;
-/** Sideways drift past which the gesture is handed back to the browser. */
 const HORIZONTAL_SLOP_PX = 30;
-/** Matches the `translate` transition below; the exit runs on the same clock. */
 const SETTLE_MS = 150;
 
 interface GrabberHandlers {
@@ -226,13 +220,11 @@ const SheetContent = React.forwardRef<
         )}
         {children}
         {showCloseButton && (
-          // Portal content sits outside the app shell, so it consumes its own
-          // safe insets instead of inheriting the shell's padding.
           <SheetPrimitive.Close
-            className="mobile-touch-target absolute flex h-9 w-9 items-center justify-center rounded-full opacity-70 ring-offset-background transition-colors hover:bg-accent hover:opacity-100 active:bg-accent/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none"
+            className="mobile-touch-target absolute flex h-7 w-7 items-center justify-center rounded-full bg-muted text-muted-foreground transition-colors hover:bg-muted/80 active:bg-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none"
             style={{
-              top: 'calc(var(--app-safe-top) + 0.5rem)',
-              right: 'calc(var(--app-safe-right) + 0.5rem)',
+              top: 'calc(var(--app-safe-top) + 0.75rem)',
+              right: 'calc(var(--app-safe-right) + 0.75rem)',
             }}
           >
             <X className="h-4 w-4" aria-hidden="true" />
@@ -279,7 +271,7 @@ const SheetTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SheetPrimitive.Title
     ref={ref}
-    className={cn('text-lg font-semibold text-foreground', className)}
+    className={cn('text-ios-headline text-foreground', className)}
     {...props}
   />
 ));
@@ -291,7 +283,7 @@ const SheetDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SheetPrimitive.Description
     ref={ref}
-    className={cn('text-sm text-muted-foreground', className)}
+    className={cn('text-ios-footnote text-muted-foreground', className)}
     {...props}
   />
 ));

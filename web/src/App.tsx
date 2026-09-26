@@ -37,7 +37,7 @@ export default function App() {
     <div className="app-viewport flex overflow-hidden bg-background">
       {showList && (
         <div
-          className={`h-full min-h-0 min-w-0 ${isMobile ? 'w-full' : 'w-80 md:w-96'} border-r border-border`}
+          className={`h-full min-h-0 min-w-0 ${isMobile ? 'w-full' : 'w-80 border-r border-separator md:w-96'}`}
         >
           <ChatList activeUsername={hash.username} onSelect={selectChat} />
         </div>
@@ -53,8 +53,8 @@ export default function App() {
         </div>
       )}
       {showDetail && !hash.username && !isMobile && (
-        <div className="flex h-full min-h-0 min-w-0 flex-1 items-center justify-center bg-secondary">
-          <p className="text-muted-foreground">选择一个群聊开始查看</p>
+        <div className="flex h-full min-h-0 min-w-0 flex-1 items-center justify-center bg-grouped">
+          <p className="text-ios-subhead text-muted-foreground">选择一个群聊开始查看</p>
         </div>
       )}
     </div>

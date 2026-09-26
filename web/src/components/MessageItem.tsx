@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import type { Message, LightboxItem, AlbumItem } from '@/types';
 import {
   isAnon, senderName, sameSender, sameDay, withinSeconds,
-  fmtTimeShort, fmtTimeFull, fmtDate, nameColor, mediaExt, buildMediaUrl,
+  fmtTimeShort, fmtTimeFull, fmtDate, hueStyle, mediaExt, buildMediaUrl,
 } from '@/utils';
 import { Avatar } from '@/components/Avatar';
 import { MessageContent, AlbumContent } from '@/components/MessageContent';
@@ -109,18 +109,27 @@ export function MessageItem({
     onActionMenu(msg);
   };
 
+  const bubbleTone = anon
+    ? 'bg-bubble-out text-bubble-out-foreground'
+    : 'bg-bubble-in text-bubble-in-foreground';
+  const tailClass = isLast
+    ? `bubble-tail ${anon ? 'bubble-tail-out' : 'bubble-tail-in'}`
+    : '';
+
   return (
     <>
       {showDateSeparator && (
-        <div className="flex justify-center py-2">
-          <span className="rounded-full bg-secondary px-3 py-1 text-xs text-muted-foreground">
+        <div className="flex justify-center py-3">
+          <span className="text-ios-caption1 font-medium text-muted-foreground">
             {fmtDate(msg.d)}
           </span>
         </div>
       )}
       <div
         data-msg-id={msg.i}
-        className={`flex min-w-0 gap-2 px-2 py-0.5 transition-colors ${highlight ? 'bg-yellow-100' : ''} ${isFirst ? 'mt-1' : ''}`}
+        className={`flex min-w-0 gap-2 px-3 py-0.5 transition-colors ${
+          highlight ? 'bg-system-yellow/20' : ''
+        } ${isFirst ? 'mt-1' : ''}`}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
@@ -142,24 +151,26 @@ export function MessageItem({
         )}
         <div className="flex min-w-0 flex-1 flex-col">
           {isFirst && (
-            <div className="flex min-w-0 items-center gap-1.5">
+            <div className="flex min-w-0 items-center gap-1.5 pb-0.5 pl-3.5">
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onOpenProfile(seed || ''); }}
                 aria-label={`查看 ${displayName} 的资料`}
-                className="min-w-0 truncate text-left text-xs font-medium hover:underline active:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                style={{ color: nameColor(seed, msg.n) }}
+                className="name-color min-w-0 truncate text-left text-ios-footnote font-semibold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                style={hueStyle(seed, msg.n)}
               >
                 {displayName}
               </button>
               {anon && (
-                <span className="shrink-0 rounded bg-secondary px-1 text-[10px] text-muted-foreground">
-                  所有者
-                </span>
+                <span className="shrink-0 text-ios-caption2 text-muted-foreground">所有者</span>
               )}
             </div>
           )}
-          <div className="min-w-0 max-w-full break-words rounded-lg bg-card px-2.5 py-1.5 shadow-sm transition-colors active:bg-secondary">
+          <div
+            className={`bubble min-w-0 max-w-full break-words rounded-ios-bubble px-3.5 py-2 transition-colors ${bubbleTone} ${tailClass} ${
+              isLast ? 'rounded-bl-[6px]' : ''
+            }`}
+          >
             {albumItems && albumItems.length >= 2 ? (
               <AlbumContent items={albumItems} onOpenLightbox={onOpenLightbox} />
             ) : (
@@ -172,7 +183,7 @@ export function MessageItem({
               />
             )}
           </div>
-          <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-1 text-[10px] text-muted-foreground">
+          <div className="mt-1 flex min-w-0 flex-wrap items-center gap-1.5 pl-3.5 text-ios-caption2 text-muted-foreground">
             {msg.e && <span>已编辑</span>}
             <span className="time-short">{fmtTimeShort(msg.d)}</span>
             <span className="time-full hidden">{fmtTimeFull(msg.d)}</span>

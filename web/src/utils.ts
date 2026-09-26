@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import type { Message } from '@/types';
 
 const VERSION = String(Date.now());
@@ -50,6 +51,33 @@ export function fmtListDate(d: number): string {
   if (diffDays === 1) return '昨天';
   if (dt.getFullYear() === now.getFullYear()) return `${dt.getMonth() + 1}/${dt.getDate()}`;
   return `${dt.getFullYear()}/${dt.getMonth() + 1}/${dt.getDate()}`;
+}
+
+/**
+ * The calendar day a timestamp falls on *for the reader*, padded for
+ * `<input type="date">`. Display everywhere else is local too (fmtDate and
+ * friends read getDate/getMonth), so a date control has to agree with it —
+ * `toISOString()` would answer in UTC and disagree by the offset.
+ */
+export function toLocalDateInput(secs: number): string {
+  const dt = new Date(secs * 1000);
+  const m = String(dt.getMonth() + 1).padStart(2, '0');
+  const d = String(dt.getDate()).padStart(2, '0');
+  return `${dt.getFullYear()}-${m}-${d}`;
+}
+
+/**
+ * The half-open unix-second range one local calendar day covers.
+ *
+ * The end comes from the *next* day's midnight rather than `start + 86400`, so a
+ * DST transition (a 23- or 25-hour local day) still lands on the right boundary.
+ */
+export function localDayRange(dateStr: string): [number, number] {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return [
+    new Date(y, m - 1, d).getTime() / 1000,
+    new Date(y, m - 1, d + 1).getTime() / 1000,
+  ];
 }
 
 export function fmtDur(sec: number): string {
@@ -128,34 +156,37 @@ export function mediaExt(m: Message): string {
 
 const PALETTE_HUES = [0, 30, 60, 120, 160, 200, 220, 260, 290, 320];
 
+/**
+ * A stable hue for a sender. Only the hue is returned: the saturation and
+ * lightness live in CSS (`.avatar-tint` / `.name-color`) so the same hue reads
+ * correctly on both the light and the dark palette instead of being frozen into
+ * an inline colour at render time.
+ */
 export function colorSeed(id: string | number | undefined, name?: string): number {
   const s = id !== undefined ? String(id) : name || '';
   let h = 0;
   for (let i = 0; i < s.length; i++) {
     h = ((h << 5) - h + s.charCodeAt(i)) | 0;
-  h = Math.abs(h);
+    h = Math.abs(h);
   }
   return PALETTE_HUES[h % PALETTE_HUES.length];
-}
-
-export function avatarColor(seed: string | number | undefined, name?: string): string {
-  const hue = colorSeed(seed, name);
-  return `hsl(${hue}, 65%, 50%)`;
-}
-
-export function avatarGradient(seed: string | number | undefined, name?: string): string {
-  const hue = colorSeed(seed, name);
-  return `linear-gradient(135deg, hsl(${hue}, 70%, 55%), hsl(${(hue + 30) % 360}, 70%, 45%))`;
-}
-
-export function nameColor(seed: string | number | undefined, name?: string): string {
-  const hue = colorSeed(seed, name);
-  return `hsl(${hue}, 60%, 45%)`;
 }
 
 export function initialOf(name?: string): string {
   if (!name) return '#';
   return name.charAt(0).toUpperCase();
+}
+
+/**
+ * The inline `--h` that `.avatar-tint` and `.name-color` read.
+ *
+ * The cast is the standard escape hatch for custom properties: @types/react
+ * deliberately ships a closed `CSSProperties`, so `{'--h': …}` is otherwise a
+ * type error. Keeping it here means the cast is written once rather than at
+ * every call site.
+ */
+export function hueStyle(seed: string | number | undefined, name?: string): CSSProperties {
+  return { '--h': String(colorSeed(seed, name)) } as CSSProperties;
 }
 
 export function parseHash(): { username?: string; msgId?: number } {

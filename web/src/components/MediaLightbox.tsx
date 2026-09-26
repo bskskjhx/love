@@ -77,7 +77,7 @@ export function MediaLightbox({ items, start, onClose, username }: MediaLightbox
 
           {showNav && (
             <span
-              className="pointer-events-none absolute left-1/2 -translate-x-1/2 text-sm text-white/70"
+              className="pointer-events-none absolute left-1/2 -translate-x-1/2 text-ios-subhead tabular-nums text-white/70"
               style={{ top: 'calc(var(--app-safe-top) + 1rem)' }}
             >
               {index + 1} / {items.length}
@@ -153,13 +153,13 @@ function VideoView({ item, username }: { item: LightboxItem; username?: string }
   if (failed) {
     return (
       <div className="flex max-w-full flex-col items-center gap-3 px-4 text-center text-white">
-        <p>暂无完整视频</p>
+        <p className="text-ios-body">暂无完整视频</p>
         {username && item.msgId && (
           <a
             href={`https://t.me/${username}/${item.msgId}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="mobile-touch-target flex items-center gap-1 rounded-lg bg-white/10 px-3 text-sm transition hover:bg-white/20 active:bg-white/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            className="mobile-touch-target flex items-center gap-1 rounded-ios-field bg-white/10 px-3 text-ios-subhead transition hover:bg-white/20 active:bg-white/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
           >
             <ExternalLink size={14} aria-hidden="true" /> 在 Telegram 中打开
           </a>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { avatarGradient, initialOf } from '@/utils';
+import { hueStyle, initialOf } from '@/utils';
 import { Avatar as ShadcnAvatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 
@@ -30,9 +30,9 @@ export function Avatar({ src, name, seed, size = 40, className = '' }: AvatarPro
     >
       {showFallback && (
         <AvatarFallback
-          className="flex items-center justify-center font-medium text-white"
+          className="avatar-tint flex items-center justify-center font-semibold text-white"
           style={{
-            background: avatarGradient(seed, name),
+            ...hueStyle(seed, name),
             fontSize: size * 0.4,
           }}
         >

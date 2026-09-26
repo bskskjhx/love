@@ -123,7 +123,7 @@ export function VoicePlayer({ src, dur }: VoicePlayerProps) {
   };
 
   if (failed) {
-    return <span className="text-sm text-muted-foreground">语音消息不可用</span>;
+    return <span className="text-ios-subhead text-muted-foreground">语音消息不可用</span>;
   }
 
   const display = dragging ?? (playing || current > 0 ? current : duration);
@@ -131,14 +131,14 @@ export function VoicePlayer({ src, dur }: VoicePlayerProps) {
 
   return (
     // Long press must not compete with play/seek on the player surface.
-    <div className="flex min-w-0 max-w-full items-center gap-2" data-no-menu>
+    <div className="flex min-w-0 max-w-full items-center gap-2.5" data-no-menu>
       <audio ref={audioRef} src={src} preload="metadata" />
       <button
         type="button"
         onClick={toggle}
         aria-label={playing ? '暂停语音' : '播放语音'}
         title={blocked ? '浏览器阻止了自动播放，请再点一次' : undefined}
-        className="mobile-touch-target flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition hover:bg-primary/90 active:bg-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        className="mobile-touch-target flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition active:bg-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         {playing ? <Pause size={18} aria-hidden="true" /> : <Play size={18} aria-hidden="true" />}
       </button>
@@ -152,7 +152,7 @@ export function VoicePlayer({ src, dur }: VoicePlayerProps) {
         onValueCommit={onValueCommit}
         className="min-w-0 flex-1"
       />
-      <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+      <span className="shrink-0 text-ios-caption1 tabular-nums text-muted-foreground">
         {fmtDur(display)}
       </span>
     </div>

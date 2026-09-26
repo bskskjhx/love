@@ -4,26 +4,38 @@
 
 @layer base {
   :root {
+    /* iOS semantic colours, light. Names stay shadcn's so the ~90% of call
+       sites written against bg-background / text-muted-foreground keep working. */
     --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
+    --foreground: 0 0% 0%;
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
+    --card-foreground: 0 0% 0%;
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 240 5.9% 10%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 240 10% 3.9%;
-    --radius: 0.5rem;
+    --popover-foreground: 0 0% 0%;
+    --primary: 211 100% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 24% 96%;
+    --secondary-foreground: 0 0% 0%;
+    --muted: 240 24% 96%;
+    --muted-foreground: 240 2% 43%;
+    --accent: 240 24% 96%;
+    --accent-foreground: 0 0% 0%;
+    --destructive: 3 100% 59%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 2% 78%;
+    --input: 240 2% 78%;
+    --ring: 211 100% 50%;
+    --radius: 0.75rem;
+
+    --grouped: 240 24% 96%;
+    --separator: rgba(60, 60, 67, 0.29);
+    --bubble-out: 211 100% 50%;
+    --bubble-out-foreground: 0 0% 100%;
+    --bubble-in: 240 5% 92%;
+    --bubble-in-foreground: 0 0% 0%;
+    --system-yellow: 48 100% 50%;
+    --system-green: 135 59% 49%;
+    --system-orange: 35 100% 50%;
 
     /* Mobile shell contract: consumed by .app-viewport (app shell) only.
        Portal overlays live outside the shell and must apply their own insets. */
@@ -45,6 +57,64 @@
   }
 
   .dark {
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
+    --card: 240 3% 11%;
+    --card-foreground: 0 0% 100%;
+    --popover: 240 2% 18%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 210 100% 52%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 3% 11%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 240 2% 18%;
+    --muted-foreground: 240 2% 57%;
+    --accent: 240 2% 18%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 3 100% 61%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 2% 22%;
+    --input: 240 2% 22%;
+    --ring: 210 100% 52%;
+
+    --grouped: 0 0% 0%;
+    --separator: rgba(84, 84, 88, 0.65);
+    --bubble-out: 210 100% 52%;
+    --bubble-out-foreground: 0 0% 100%;
+    --bubble-in: 240 2% 24%;
+    --bubble-in-foreground: 0 0% 100%;
+    --system-yellow: 50 100% 52%;
+    --system-green: 135 64% 50%;
+    --system-orange: 36 100% 52%;
+  }
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+    margin: 0;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
+    -webkit-touch-callout: none;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  input,
+  textarea {
+    -webkit-touch-callout: default;
   }
 }
 
@@ -63,8 +133,6 @@
   }
 }
 
-/* Standalone buttons and toggles get a real 44x44 hit box on mobile.
-   Inline links inside body copy are deliberately exempt. */
 @media (max-width: 767px) {
   .mobile-touch-target {
     min-width: var(--app-touch-target);
@@ -72,12 +140,6 @@
   }
 }
 
-/* Drag-to-dismiss strip on a bottom sheet.
-   Shown only where there is no hovering pointer, so a desktop sheet keeps
-   exactly the chrome it had. `touch-action: none` is scoped to this strip: the
-   strip owns the whole gesture, and nothing below it is affected. The strip is a
-   full touch target rather than the 4px bar inside it — the bar is the affordance,
-   the strip is the thing a thumb has to hit. */
 .sheet-grabber {
   display: none;
 }
@@ -91,15 +153,7 @@
     height: var(--app-touch-target);
     touch-action: none;
   }
-}
 
-/* Touch baseline.
-   `manipulation` drops the ~300ms wait browsers hold after a tap to see whether
-   it is the first half of a double-tap zoom. It is applied to controls only:
-   putting it on the document would also disable the user's own pinch-zoom.
-   `[role="slider"]` is excluded from the rest of the sheet's gestures but keeps
-   this one — a slider is still a control. */
-@media (hover: none) {
   a,
   button,
   [role="button"],
@@ -111,19 +165,11 @@
     touch-action: manipulation;
   }
 
-  /* No focus ring on a touch screen.
-     A sheet moves focus to its first item when it opens, and the browsers'
-     `:focus-visible` heuristic reads that programmatic focus as keyboard focus —
-     so the ring lands on a menu row the user only ever touched, and a near-black
-     `--ring` reads as a stray box drawn around it. Tapping gives its feedback
-     through `active:` instead.
-     Only the tap targets are covered: text fields keep their focus styling, since
-     focusing one on a phone is a deliberate act with a keyboard attached to it.
-     A hardware keyboard on a tablet loses its ring here; that is the trade for
-     not being able to tell the two apart from CSS alone.
-     The `html` prefix is load-bearing: `:is(...)` and Tailwind's
-     `focus-visible:ring-*` have equal specificity, so without it this would win
-     only by sitting later in the stylesheet than `@tailwind utilities`. */
+  /* A sheet focuses its first row when it opens, and the browsers' focus-visible
+     heuristic reads that programmatic focus as keyboard focus — so a ring lands
+     on a row the user only ever touched. Tapping gives its feedback through
+     `active:` instead. Text fields are exempt. The `html` prefix is load-bearing:
+     :is(...) and Tailwind's focus-visible:ring-* have equal specificity. */
   html :is(a, button, [role="button"]):focus-visible {
     outline: none;
     box-shadow: none;
@@ -142,27 +188,55 @@
   overflow: hidden;
 }
 
-html, body, #root {
-  height: 100%;
-  margin: 0;
+/* Sender colour. Only the hue is data; saturation and lightness are per-theme so
+   the same hue stays legible on white and on black. The hue arrives inline as
+   `--h` from colorSeed(). */
+.avatar-tint {
+  background-image: linear-gradient(
+    135deg,
+    hsl(var(--h) 58% 55%),
+    hsl(calc(var(--h) + 30) 58% 45%)
+  );
 }
 
-/* Stops iOS Safari inflating body text when the phone is turned to landscape. */
-html {
-  -webkit-text-size-adjust: 100%;
-  text-size-adjust: 100%;
+.dark .avatar-tint {
+  background-image: linear-gradient(
+    135deg,
+    hsl(var(--h) 42% 46%),
+    hsl(calc(var(--h) + 30) 42% 36%)
+  );
 }
 
-body {
-  -webkit-tap-highlight-color: transparent;
-  overscroll-behavior: none;
-  /* Long pressing app chrome (headers, list rows, message bubbles) must reach
-     the app's own long-press menu instead of raising iOS's copy/lookup callout.
-     Text fields are exempted below: they need the native selection callout. */
-  -webkit-touch-callout: none;
+.name-color {
+  color: hsl(var(--h) 55% 40%);
 }
 
-input,
-textarea {
-  -webkit-touch-callout: default;
+.dark .name-color {
+  color: hsl(var(--h) 68% 70%);
+}
+
+/* iMessage-style tail on the last bubble of a sender's run. Drawn with borders
+   rather than a masked square so it needs no knowledge of what is behind it,
+   which keeps it correct on the jump-to-message highlight as well. */
+.bubble {
+  position: relative;
+}
+
+.bubble-tail::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: -6px;
+  width: 0;
+  height: 0;
+  border-bottom: 9px solid var(--bubble-tail-color);
+  border-left: 7px solid transparent;
+}
+
+.bubble-tail-out {
+  --bubble-tail-color: hsl(var(--bubble-out));
+}
+
+.bubble-tail-in {
+  --bubble-tail-color: hsl(var(--bubble-in));
 }

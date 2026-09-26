@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Search, X, RefreshCw } from 'lucide-react';
+import { Search, X, RefreshCw, Moon, Sun } from 'lucide-react';
 import type { ChatSummary } from '@/types';
 import { fmtListDate } from '@/utils';
 import { loadChats, refreshChats, loadAvatarIndex } from '@/data';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import { useTheme } from '@/hooks/useTheme';
 import { Avatar } from '@/components/Avatar';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 interface ChatListProps {
   activeUsername?: string;
@@ -37,6 +39,7 @@ export function ChatList({ activeUsername, onSelect }: ChatListProps) {
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
   const [avatarIdx, setAvatarIdx] = useState<ChatAvatars>({});
   const listRef = useRef<HTMLDivElement>(null);
+  const { theme, toggle: toggleTheme } = useTheme();
 
   /** Avatars are fetched at most once per chat, so this set guards re-entry. */
   const requestedAvatars = useRef<Set<string>>(new Set());
@@ -75,8 +78,6 @@ export function ChatList({ activeUsername, onSelect }: ChatListProps) {
     if (pending.length === 0) return;
     for (const c of pending) requestedAvatars.current.add(c.username);
 
-    // Every index is an independent file; fetch them together rather than
-    // walking the list one round trip at a time.
     const loaded = await Promise.all(pending.map(async (c): Promise<[string, { ok: number; ts: number }] | null> => {
       const idx = await loadAvatarIndex(c.username);
       const chat = idx.chat;
@@ -107,15 +108,28 @@ export function ChatList({ activeUsername, onSelect }: ChatListProps) {
   };
 
   return (
-    <div className="flex h-full min-h-0 min-w-0 flex-col bg-background">
+    <div className="flex h-full min-h-0 min-w-0 flex-col bg-grouped">
+      <div className="flex shrink-0 items-end justify-between gap-2 px-4 pb-2 pt-4">
+        <h1 className="min-w-0 truncate text-ios-large-title text-foreground">聊天存档</h1>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleTheme}
+          aria-label={theme === 'dark' ? '切换到浅色模式' : '切换到深色模式'}
+          className="mobile-touch-target shrink-0 rounded-full"
+        >
+          {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+        </Button>
+      </div>
+
       {chats.length >= SEARCH_MIN_CHATS && (
-        <div className="shrink-0 border-b border-border p-2">
-          <div className="flex min-h-11 items-center gap-2 rounded-lg bg-muted px-2.5">
+        <div className="shrink-0 px-4 pb-3">
+          <div className="flex min-h-11 items-center gap-2 rounded-ios-field bg-muted px-3">
             <Search size={16} className="shrink-0 text-muted-foreground" aria-hidden="true" />
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="搜索群聊..."
+              placeholder="搜索群聊"
               aria-label="搜索群聊"
               className="min-w-0 flex-1 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
             />
@@ -124,23 +138,24 @@ export function ChatList({ activeUsername, onSelect }: ChatListProps) {
                 type="button"
                 onClick={() => setQuery('')}
                 aria-label="清空搜索"
-                className="mobile-touch-target flex shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-accent active:bg-accent/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="mobile-touch-target -mr-1 flex shrink-0 items-center justify-center rounded-full text-muted-foreground transition active:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <X size={16} aria-hidden="true" />
               </button>
             )}
           </div>
-          <div className="mt-1 flex gap-1.5">
+
+          <div className="mt-2.5 flex rounded-ios-segment bg-muted p-0.5" role="group">
             {TIME_FILTERS.map(({ value, label }) => (
               <button
                 key={value}
                 type="button"
                 onClick={() => setTimeFilter(value)}
                 aria-pressed={timeFilter === value}
-                className={`mobile-touch-target inline-flex items-center justify-center rounded-full px-3 py-1.5 text-xs transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                className={`mobile-touch-target flex-1 rounded-[7px] py-1 text-ios-subhead transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                   timeFilter === value
-                    ? 'bg-primary text-primary-foreground active:bg-primary/80'
-                    : 'bg-muted text-muted-foreground hover:bg-accent active:bg-accent/70'
+                    ? 'bg-card font-semibold text-foreground shadow-ios-segment'
+                    : 'font-medium text-muted-foreground'
                 }`}
               >
                 {label}
@@ -150,7 +165,11 @@ export function ChatList({ activeUsername, onSelect }: ChatListProps) {
         </div>
       )}
 
-      <div ref={listRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain" {...pullHandlers}>
+      <div
+        ref={listRef}
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-[calc(1.5rem+var(--app-safe-bottom))]"
+        {...pullHandlers}
+      >
         <div className="flex justify-center" style={{ height: pullDist }}>
           <RefreshCw
             size={20}
@@ -161,12 +180,12 @@ export function ChatList({ activeUsername, onSelect }: ChatListProps) {
         </div>
 
         {loading && (
-          <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
+          <div className="flex items-center justify-center py-8 text-ios-subhead text-muted-foreground">
             加载中…
           </div>
         )}
         {error && (
-          <div className="flex flex-col items-center justify-center py-8 text-sm text-muted-foreground">
+          <div className="flex flex-col items-center justify-center py-8 text-ios-subhead text-muted-foreground">
             <p>{error}</p>
             <button
               type="button"
@@ -179,7 +198,7 @@ export function ChatList({ activeUsername, onSelect }: ChatListProps) {
         )}
 
         {!loading && !error && visible.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-8 text-sm text-muted-foreground">
+          <div className="flex flex-col items-center justify-center py-8 text-ios-subhead text-muted-foreground">
             {chats.length === 0 ? (
               <p>暂无群组</p>
             ) : (
@@ -197,46 +216,53 @@ export function ChatList({ activeUsername, onSelect }: ChatListProps) {
           </div>
         )}
 
-        <div className="divide-y divide-border">
-          {visible.map((c) => {
-            const av = avatarIdx[c.username];
-            const isActive = activeUsername === c.username;
-            return (
-              <button
-                key={c.username}
-                type="button"
-                onClick={() => onSelect(c.username)}
-                aria-current={isActive ? 'true' : undefined}
-                className={`flex w-full min-w-0 items-center gap-3 px-3 py-2.5 text-left transition hover:bg-accent active:bg-accent/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${
-                  isActive ? 'bg-accent' : ''
-                }`}
-              >
-                <Avatar
-                  src={av?.ok ? `./data/${c.username}/avatars/chat.jpg?t=${av.ts}` : undefined}
-                  name={c.title || c.username}
-                  seed={c.username}
-                  size={48}
-                />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="truncate text-sm font-medium text-foreground">
-                      {c.title || c.username}
-                    </span>
-                    <span className="shrink-0 text-xs text-muted-foreground">
-                      {fmtListDate(c.last_date)}
-                    </span>
+        {visible.length > 0 && (
+          <div className="overflow-hidden rounded-ios-card bg-card shadow-ios-card">
+            {visible.map((c, index) => {
+              const av = avatarIdx[c.username];
+              const isActive = activeUsername === c.username;
+              const isLastRow = index === visible.length - 1;
+              return (
+                <button
+                  key={c.username}
+                  type="button"
+                  onClick={() => onSelect(c.username)}
+                  aria-current={isActive ? 'true' : undefined}
+                  className={`flex w-full min-w-0 items-center gap-3 px-4 text-left transition-colors ${
+                    isActive ? 'bg-primary/10' : 'active:bg-secondary'
+                  } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring`}
+                >
+                  <Avatar
+                    src={av?.ok ? `./data/${c.username}/avatars/chat.jpg?t=${av.ts}` : undefined}
+                    name={c.title || c.username}
+                    seed={c.username}
+                    size={48}
+                  />
+                  <div
+                    className={`flex min-w-0 flex-1 flex-col gap-0.5 py-2.5 ${
+                      isLastRow ? '' : 'border-b border-separator'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="truncate text-ios-body text-foreground">
+                        {c.title || c.username}
+                      </span>
+                      <span className="shrink-0 text-ios-footnote text-muted-foreground">
+                        {fmtListDate(c.last_date)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="truncate text-ios-footnote text-muted-foreground">{c.lp}</span>
+                      <span className="shrink-0 text-ios-footnote text-muted-foreground">
+                        {c.count > 999 ? '999+' : c.count}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="truncate text-xs text-muted-foreground">{c.lp}</span>
-                    <span className="shrink-0 text-xs text-muted-foreground">
-                      {c.count > 999 ? '999+' : c.count}
-                    </span>
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

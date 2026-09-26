@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { ArrowLeft, Search, Calendar, ChevronUp, Loader2, RefreshCw } from 'lucide-react';
+import { ChevronLeft, Search, Calendar, ChevronUp, Loader2, RefreshCw } from 'lucide-react';
 import type { ChatMeta, Message, LightboxItem, AlbumItem, AvatarIndex } from '@/types';
 import {
   loadMeta, refreshMeta, loadChunk, refreshChunk, loadAvatarIndex,
@@ -314,23 +314,22 @@ export function ChatDetail({ username, initialMsgId, onBack }: ChatDetailProps) 
 
   return (
     <div className="relative flex h-full min-h-0 min-w-0 flex-col bg-background">
-      {/* Header */}
-      <div className="flex shrink-0 items-center gap-2 border-b border-border bg-card px-3 py-2 shadow-sm">
+      <div className="flex min-h-11 shrink-0 items-center gap-2 border-b border-separator bg-card/80 px-2 backdrop-blur-xl">
         {isNarrow && (
           <Button
             variant="ghost"
             size="icon"
             onClick={onBack}
             aria-label="返回群聊列表"
-            className="mobile-touch-target shrink-0 rounded-full"
+            className="mobile-touch-target -ml-2 shrink-0 rounded-full"
           >
-            <ArrowLeft size={20} />
+            <ChevronLeft size={24} />
           </Button>
         )}
-        <Avatar src={chatAvatar} name={username} seed={username} size={36} />
+        <Avatar src={chatAvatar} name={username} seed={username} size={30} />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium">{username}</p>
-          <p className="truncate text-xs text-muted-foreground">
+          <p className="truncate text-ios-headline text-foreground">{username}</p>
+          <p className="truncate text-ios-caption1 text-muted-foreground">
             {meta ? `${meta.first_date ? fmtDate(meta.first_date) : ''} - ${fmtDate(meta.last_date)}` : ''}
           </p>
         </div>
@@ -341,7 +340,7 @@ export function ChatDetail({ username, initialMsgId, onBack }: ChatDetailProps) 
           aria-label="搜索消息"
           className="mobile-touch-target shrink-0 rounded-full"
         >
-          <Search size={18} />
+          <Search size={20} />
         </Button>
         <Button
           variant="ghost"
@@ -350,47 +349,44 @@ export function ChatDetail({ username, initialMsgId, onBack }: ChatDetailProps) 
           aria-label="跳转到日期"
           className="mobile-touch-target shrink-0 rounded-full"
         >
-          <Calendar size={18} />
+          <Calendar size={20} />
         </Button>
       </div>
 
-      {/* Pinned message bar */}
       {meta?.pinned_id && (
         <button
           type="button"
           onClick={() => jumpTo(meta.pinned_id!)}
           aria-label="跳转到置顶消息"
-          className="mobile-touch-target flex shrink-0 items-center gap-2 border-b border-border bg-yellow-50 px-3 py-1.5 text-left text-xs text-muted-foreground transition-colors hover:bg-yellow-100 active:bg-yellow-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+          className="mobile-touch-target flex shrink-0 items-center gap-2 border-b border-separator bg-system-yellow/15 px-3 py-1.5 text-left text-ios-footnote text-muted-foreground transition-colors active:bg-system-yellow/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
         >
-          <span className="shrink-0 text-yellow-600" aria-hidden="true">📌</span>
+          <span className="shrink-0 text-system-yellow" aria-hidden="true">📌</span>
           <span className="min-w-0 truncate">{pinnedPreview}</span>
         </button>
       )}
 
-      {/* Pull refresh indicator */}
       <div className="flex shrink-0 justify-center overflow-hidden" style={{ height: pullDist }}>
         <RefreshCw size={18} className={`mt-1 text-muted-foreground ${refreshing ? 'animate-spin' : ''}`} aria-hidden="true" />
       </div>
 
-      {/* Messages — the only scrolling region of the detail pane */}
       <div
         ref={scrollRef}
-        className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-14"
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-16"
         onScroll={onScroll}
         {...pullHandlers}
       >
         {loading && (
-          <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
+          <div className="flex items-center justify-center py-8 text-ios-subhead text-muted-foreground">
             <Loader2 size={20} className="mr-2 animate-spin" aria-hidden="true" /> 加载中…
           </div>
         )}
         {error && (
-          <div className="flex flex-col items-center justify-center py-8 text-sm text-muted-foreground">
+          <div className="flex flex-col items-center justify-center py-8 text-ios-subhead text-muted-foreground">
             <p>{error}</p>
             <button
               type="button"
               onClick={() => window.location.reload()}
-              className="mobile-touch-target mt-2 inline-flex items-center justify-center px-3 text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="mobile-touch-target mt-2 inline-flex items-center justify-center px-3 text-primary transition-opacity active:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               重试
             </button>
@@ -399,7 +395,6 @@ export function ChatDetail({ username, initialMsgId, onBack }: ChatDetailProps) 
 
         {!loading && !error && view && (
           <>
-            {/* Top sentinel + load older */}
             <div ref={topSentinel} className="h-1" />
             {view.first > 0 && (
               <div className="flex justify-center py-2">
@@ -407,14 +402,14 @@ export function ChatDetail({ username, initialMsgId, onBack }: ChatDetailProps) 
                   type="button"
                   onClick={loadOlder}
                   disabled={busy}
-                  className="mobile-touch-target inline-flex items-center justify-center px-3 text-xs text-primary transition-opacity active:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+                  className="mobile-touch-target inline-flex items-center justify-center px-3 text-ios-footnote text-primary transition-opacity active:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
                 >
                   {busy ? '加载中…' : '加载更早消息'}
                 </button>
               </div>
             )}
             {view.first <= 0 && view.messages.length > 0 && (
-              <div className="flex justify-center py-2 text-xs text-muted-foreground">已到最早消息</div>
+              <div className="flex justify-center py-2 text-ios-caption1 text-muted-foreground">已到最早消息</div>
             )}
 
             {view.messages.map((msg, idx) => {
@@ -447,7 +442,7 @@ export function ChatDetail({ username, initialMsgId, onBack }: ChatDetailProps) 
                   type="button"
                   onClick={loadNewer}
                   disabled={busy}
-                  className="mobile-touch-target inline-flex items-center justify-center px-3 text-xs text-primary transition-opacity active:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+                  className="mobile-touch-target inline-flex items-center justify-center px-3 text-ios-footnote text-primary transition-opacity active:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
                 >
                   {busy ? '加载中…' : '加载更新消息'}
                 </button>
@@ -458,19 +453,17 @@ export function ChatDetail({ username, initialMsgId, onBack }: ChatDetailProps) 
         )}
       </div>
 
-      {/* Back to bottom button — positioned against the detail pane, not the viewport */}
       {showBackToBottom && (
         <button
           type="button"
           onClick={scrollToBottom}
           aria-label="回到最新消息"
-          className="mobile-touch-target absolute bottom-4 right-4 z-[var(--app-z-floating)] flex items-center justify-center rounded-full bg-card shadow-lg transition hover:bg-accent active:bg-accent/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="mobile-touch-target absolute bottom-5 right-4 z-[var(--app-z-floating)] flex items-center justify-center rounded-full bg-card/80 text-primary shadow-ios-card backdrop-blur-xl transition hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <ChevronUp size={20} className="text-muted-foreground" aria-hidden="true" />
+          <ChevronUp size={22} className="text-primary" aria-hidden="true" />
         </button>
       )}
 
-      {/* Search panel */}
       {searchOpen && (
         <SearchPanel
           username={username}
@@ -480,7 +473,6 @@ export function ChatDetail({ username, initialMsgId, onBack }: ChatDetailProps) 
         />
       )}
 
-      {/* Date jump */}
       {dateOpen && meta && (
         <DateJump
           meta={meta}
@@ -490,7 +482,6 @@ export function ChatDetail({ username, initialMsgId, onBack }: ChatDetailProps) 
         />
       )}
 
-      {/* Lightbox */}
       {lightbox && (
         <MediaLightbox
           items={lightbox.items}
@@ -500,7 +491,6 @@ export function ChatDetail({ username, initialMsgId, onBack }: ChatDetailProps) 
         />
       )}
 
-      {/* Action menu */}
       {actionMenu && (
         <ActionMenu
           msg={actionMenu}
@@ -510,7 +500,6 @@ export function ChatDetail({ username, initialMsgId, onBack }: ChatDetailProps) 
         />
       )}
 
-      {/* User profile */}
       {profileUser !== null && (
         <UserProfilePopup
           username={username}

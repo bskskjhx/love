@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ChatMeta } from '@/types';
 import { loadChunk } from '@/data';
+import { toLocalDateInput, localDayRange } from '@/utils';
 import { useRestoreFocus } from '@/hooks/useRestoreFocus';
 import { useBackButtonClose } from '@/hooks/useBackButtonClose';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 
 export interface DateJumpProps {
   meta: ChatMeta;
@@ -14,8 +15,8 @@ export interface DateJumpProps {
 }
 
 export function DateJump({ meta, username, onClose, onJump }: DateJumpProps) {
-  const minDate = meta.first_date ? new Date(meta.first_date * 1000).toISOString().split('T')[0] : '';
-  const maxDate = meta.last_date ? new Date(meta.last_date * 1000).toISOString().split('T')[0] : '';
+  const minDate = meta.first_date ? toLocalDateInput(meta.first_date) : '';
+  const maxDate = meta.last_date ? toLocalDateInput(meta.last_date) : '';
   const [date, setDate] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,8 +36,7 @@ export function DateJump({ meta, username, onClose, onJump }: DateJumpProps) {
     setBusy(true);
     setError(null);
 
-    const targetStart = new Date(date).getTime() / 1000;
-    const targetEnd = targetStart + 86400;
+    const [targetStart, targetEnd] = localDayRange(date);
 
     // Lowest chunk whose range ends on or after the target day — that is the
     // first chunk that can contain it. When the day falls in a gap between
@@ -83,15 +83,14 @@ export function DateJump({ meta, username, onClose, onJump }: DateJumpProps) {
         showCloseButton={false}
         aria-describedby={undefined}
         onCloseAutoFocus={onCloseAutoFocus}
-        className="max-w-sm p-4"
-        style={{ paddingBottom: 'calc(1rem + var(--app-safe-bottom))' }}
+        className="gap-0 p-0"
       >
-        <DialogHeader>
-          <DialogTitle className="text-sm font-medium">跳转到日期</DialogTitle>
-        </DialogHeader>
+        <DialogTitle className="px-4 pb-2 pt-4 text-center text-ios-headline">
+          跳转到日期
+        </DialogTitle>
 
-        <div className="space-y-1.5">
-          <label htmlFor="date-jump-input" className="block text-xs text-muted-foreground">
+        <div className="space-y-2 px-4 pb-4">
+          <label htmlFor="date-jump-input" className="sr-only">
             选择日期
           </label>
           <Input
@@ -104,19 +103,18 @@ export function DateJump({ meta, username, onClose, onJump }: DateJumpProps) {
               setDate(e.target.value);
               setError(null);
             }}
-            className="min-w-0"
+            className="min-w-0 text-center"
           />
+          {error && (
+            <p className="text-center text-ios-footnote text-destructive" role="alert">{error}</p>
+          )}
         </div>
 
-        {error && (
-          <p className="text-xs text-destructive" role="alert">{error}</p>
-        )}
-
-        <div className="flex justify-end gap-2">
+        <div className="flex border-t border-separator">
           <button
             type="button"
             onClick={onClose}
-            className="mobile-touch-target inline-flex items-center justify-center rounded-lg px-3 text-sm text-muted-foreground transition hover:bg-accent active:bg-accent/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="flex-1 border-r border-separator py-3 text-ios-body text-primary transition-colors active:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
           >
             取消
           </button>
@@ -124,7 +122,7 @@ export function DateJump({ meta, username, onClose, onJump }: DateJumpProps) {
             type="button"
             onClick={handleJump}
             disabled={!date || busy}
-            className="mobile-touch-target inline-flex items-center justify-center rounded-lg bg-primary px-3 text-sm text-primary-foreground transition hover:bg-primary/90 active:bg-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+            className="flex-1 py-3 text-ios-body font-semibold text-primary transition-colors active:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:opacity-40"
           >
             {busy ? '跳转中…' : error ? '重试' : '跳转'}
           </button>

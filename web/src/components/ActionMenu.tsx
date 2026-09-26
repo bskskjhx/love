@@ -51,14 +51,14 @@ export function ActionMenu({ msg, username, onClose, onJumpTo }: ActionMenuProps
         aria-describedby={undefined}
         onCloseAutoFocus={onCloseAutoFocus}
         onDismiss={onClose}
-        className="mx-auto w-full max-w-sm rounded-t-2xl p-2 sm:rounded-2xl"
+        className="mx-auto w-full max-w-sm rounded-t-ios-sheet p-0 sm:rounded-ios-sheet"
         style={{ paddingBottom: 'calc(0.5rem + var(--app-safe-bottom))' }}
       >
         <SheetHeader className="sr-only">
           <SheetTitle>消息操作</SheetTitle>
         </SheetHeader>
 
-        <div className="flex flex-col">
+        <div className="flex flex-col divide-y divide-separator">
           {showCopyLink && (
             <MenuItem icon={Link2} label="复制消息链接" copied={copied === 'link'} onClick={copyLink} />
           )}
@@ -74,7 +74,7 @@ export function ActionMenu({ msg, username, onClose, onJumpTo }: ActionMenuProps
         </div>
 
         {/* The single always-available close entry, since the sheet draws no X. */}
-        <div className="mt-1 border-t border-border pt-1">
+        <div className="mt-2 flex flex-col border-t border-separator pt-2">
           <MenuItem icon={X} label="关闭" onClick={onClose} />
         </div>
       </SheetContent>
@@ -94,9 +94,9 @@ function MenuItem({
     <button
       type="button"
       onClick={onClick}
-      className="mobile-touch-target flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition hover:bg-accent active:bg-accent/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+      className="mobile-touch-target flex w-full items-center gap-3 px-4 py-3 text-left text-ios-body transition-colors active:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
     >
-      <Icon size={18} className="shrink-0 text-muted-foreground" aria-hidden="true" />
+      <Icon size={20} className="shrink-0 text-primary" aria-hidden="true" />
       <span className="min-w-0 break-words">{copied ? '已复制' : label}</span>
     </button>
   );

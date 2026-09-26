@@ -18,20 +18,18 @@ const Slider = React.forwardRef<
 >(({ className, thumbLabel, ...props }, ref) => (
   <SliderPrimitive.Root
     ref={ref}
-    // The root owns the pointer area, so it carries the 44px hit box while the
-    // visible track stays thin. `touch-none` is scoped to the slider alone.
     className={cn(
       'mobile-touch-target relative flex w-full touch-none select-none items-center',
       className
     )}
     {...props}
   >
-    <SliderPrimitive.Track className="relative h-1.5 w-full grow overflow-hidden rounded-full bg-secondary">
+    <SliderPrimitive.Track className="relative h-1 w-full grow overflow-hidden rounded-full bg-background/40">
       <SliderPrimitive.Range className="absolute h-full bg-primary" />
     </SliderPrimitive.Track>
     <SliderPrimitive.Thumb
       aria-label={thumbLabel}
-      className="block h-4 w-4 rounded-full border border-primary bg-background shadow transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+      className="block h-7 w-7 rounded-full bg-white shadow-ios-segment transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
     />
   </SliderPrimitive.Root>
 ));

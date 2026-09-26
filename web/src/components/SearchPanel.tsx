@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
 import type { ChatMeta, Message } from '@/types';
 import { loadChunk } from '@/data';
-import { fmtTimeShort, nameColor, senderName } from '@/utils';
+import { fmtTimeShort, hueStyle, senderName, localDayRange } from '@/utils';
 import { renderText } from '@/components/textRender';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { useVisualViewport } from '@/hooks/useVisualViewport';
@@ -83,8 +83,8 @@ export function SearchPanel({ username, meta, onClose, onJumpTo }: SearchPanelPr
     setShown(PAGE_SIZE);
     setProgress({ done: 0, total: meta.chunks.length });
 
-    const fromTs = dateFrom ? new Date(dateFrom).getTime() / 1000 : 0;
-    const toTs = dateTo ? (new Date(dateTo).getTime() + 86400) / 1000 : Infinity;
+    const fromTs = dateFrom ? localDayRange(dateFrom)[0] : 0;
+    const toTs = dateTo ? localDayRange(dateTo)[1] : Infinity;
     const senderLower = sender.trim().toLowerCase();
 
     const allResults: SearchResult[] = [];
@@ -250,22 +250,22 @@ export function SearchPanel({ username, meta, onClose, onJumpTo }: SearchPanelPr
         aria-describedby={undefined}
         onDismiss={onClose}
         style={mobileViewportStyle}
-        className="mx-auto flex w-full flex-col gap-0 overflow-hidden p-0 md:h-auto md:max-h-[85vh] md:max-w-lg md:rounded-2xl"
+        className="mx-auto flex w-full flex-col gap-0 overflow-hidden p-0 md:h-auto md:max-h-[85vh] md:max-w-lg md:rounded-ios-sheet"
       >
-        <SheetHeader className="flex shrink-0 flex-row items-center gap-2 space-y-0 border-b border-border p-2">
+        <SheetHeader className="flex shrink-0 flex-row items-center gap-2 space-y-0 border-b border-separator p-2">
           <button
             type="button"
             onClick={onClose}
             aria-label="关闭搜索"
-            className="mobile-touch-target flex shrink-0 items-center justify-center rounded-full transition hover:bg-accent active:bg-accent/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="mobile-touch-target flex shrink-0 items-center justify-center rounded-full text-primary transition active:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <X size={20} aria-hidden="true" />
           </button>
-          <SheetTitle className="min-w-0 truncate text-sm font-medium">搜索消息</SheetTitle>
+          <SheetTitle className="min-w-0 truncate text-ios-headline">搜索消息</SheetTitle>
         </SheetHeader>
 
-        <div className="shrink-0 border-b border-border p-3">
-          <div className="flex min-h-11 items-center gap-2 rounded-lg bg-muted px-2.5">
+        <div className="shrink-0 px-3 py-2.5">
+          <div className="flex min-h-11 items-center gap-2 rounded-ios-field bg-muted px-3">
             <Search size={16} className="shrink-0 text-muted-foreground" aria-hidden="true" />
             <Input
               value={query}
@@ -292,7 +292,7 @@ export function SearchPanel({ username, meta, onClose, onJumpTo }: SearchPanelPr
                 type="button"
                 onClick={clearQuery}
                 aria-label="清空关键词"
-                className="mobile-touch-target flex shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-accent active:bg-accent/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="mobile-touch-target -mr-1 flex shrink-0 items-center justify-center rounded-full text-muted-foreground transition active:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <X size={16} aria-hidden="true" />
               </button>
@@ -305,14 +305,14 @@ export function SearchPanel({ username, meta, onClose, onJumpTo }: SearchPanelPr
             results to zero height. */}
         <div
           className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
-          style={{ paddingBottom: 'calc(0.75rem + var(--app-safe-bottom))' }}
+          style={{ paddingBottom: 'calc(1rem + var(--app-safe-bottom))' }}
         >
-          <div className="border-b border-border p-3">
+          <div className="border-b border-separator px-3 pb-3">
             <button
               type="button"
               onClick={() => setShowFilters((v) => !v)}
               aria-expanded={showFilters}
-              className="mobile-touch-target inline-flex items-center gap-1.5 rounded-lg px-2 text-xs text-muted-foreground transition hover:bg-accent active:bg-accent/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="mobile-touch-target inline-flex items-center gap-1.5 rounded-ios-field px-2 text-ios-footnote text-primary transition active:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <SlidersHorizontal size={14} aria-hidden="true" />
               筛选{filtersActive ? '（已启用）' : ''}
@@ -343,7 +343,7 @@ export function SearchPanel({ username, meta, onClose, onJumpTo }: SearchPanelPr
                     className="min-w-0 flex-1"
                   />
                 </div>
-                <label className="mobile-touch-target flex cursor-pointer items-center gap-2 rounded-lg px-1 text-sm">
+                <label className="mobile-touch-target flex cursor-pointer items-center gap-2 rounded-ios-field px-1 text-ios-body">
                   <input
                     type="checkbox"
                     checked={onlyMedia}
@@ -357,59 +357,61 @@ export function SearchPanel({ username, meta, onClose, onJumpTo }: SearchPanelPr
           </div>
 
           {!hasFilter && (
-            <p className="px-3 py-6 text-center text-sm text-muted-foreground">
+            <p className="px-3 py-6 text-center text-ios-subhead text-muted-foreground">
               输入关键词或设置筛选条件开始搜索
             </p>
           )}
 
           {hasFilter && searching && (
-            <p className="px-3 py-1.5 text-xs text-muted-foreground" role="status">
+            <p className="px-3 py-1.5 text-ios-caption1 text-muted-foreground" role="status">
               搜索中… {progress.done}/{progress.total}
             </p>
           )}
 
           {hasFilter && !searching && failedChunks > 0 && (
-            <p className="px-3 py-1.5 text-xs text-destructive" role="status">
+            <p className="px-3 py-1.5 text-ios-caption1 text-destructive" role="status">
               {failedChunks} 个分片读取失败，结果可能不完整
             </p>
           )}
 
           {hasFilter && !searching && totalHits > 0 && (
-            <p className="px-3 py-1.5 text-xs text-muted-foreground" role="status">
+            <p className="px-3 py-1.5 text-ios-caption1 text-muted-foreground" role="status">
               共 {totalHits} 条命中{totalHits > MAX_RESULTS ? `（仅显示前 ${MAX_RESULTS} 条）` : ''}
             </p>
           )}
 
-          {visibleResults.map((r) => (
+          {visibleResults.map((r, index) => (
             <button
               key={r.msg.i}
               type="button"
               onClick={() => onJumpTo(r.msg.i)}
-              className="flex w-full gap-2 border-b border-border px-3 py-2 text-left transition hover:bg-accent active:bg-accent/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+              className={`flex w-full gap-2 px-3 text-left transition-colors active:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${
+                index === visibleResults.length - 1 ? 'border-0' : 'border-b border-separator'
+              }`}
             >
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 flex-1 py-2">
                 <div className="flex items-center gap-1.5">
                   <span
-                    className="min-w-0 truncate text-xs font-medium"
-                    style={{ color: nameColor(r.msg.u ?? r.msg.n, r.msg.n) }}
+                    className="name-color min-w-0 truncate text-ios-footnote font-semibold"
+                    style={hueStyle(r.msg.u ?? r.msg.n, r.msg.n)}
                   >
                     {senderName(r.msg)}
                   </span>
-                  <span className="shrink-0 text-[10px] text-muted-foreground">
+                  <span className="shrink-0 text-ios-caption2 text-muted-foreground">
                     {fmtTimeShort(r.msg.d)}
                   </span>
                 </div>
                 {r.snippet ? (
-                  <p className="mt-0.5 break-words text-xs text-muted-foreground">
+                  <p className="mt-0.5 break-words text-ios-footnote text-muted-foreground">
                     {renderSnippet(r.snippet, terms)}
                   </p>
                 ) : r.msg.m ? (
-                  <span className="mt-0.5 inline-block rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
+                  <span className="mt-0.5 inline-block text-ios-footnote text-muted-foreground">
                     [{r.msg.m}]
                   </span>
                 ) : null}
                 {r.msg.r && (
-                  <p className="mt-0.5 text-[10px] text-muted-foreground">回复 #{r.msg.r}</p>
+                  <p className="mt-0.5 text-ios-caption2 text-muted-foreground">回复 #{r.msg.r}</p>
                 )}
               </div>
             </button>
@@ -419,14 +421,14 @@ export function SearchPanel({ username, meta, onClose, onJumpTo }: SearchPanelPr
             <button
               type="button"
               onClick={() => setShown((s) => s + PAGE_SIZE)}
-              className="mobile-touch-target flex w-full items-center justify-center px-3 text-xs text-primary transition-opacity active:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="mobile-touch-target flex w-full items-center justify-center px-3 text-ios-subhead text-primary transition active:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               加载更多
             </button>
           )}
 
           {hasFilter && !searching && results.length === 0 && (
-            <p className="px-3 py-8 text-center text-sm text-muted-foreground">
+            <p className="px-3 py-8 text-center text-ios-subhead text-muted-foreground">
               {failedChunks > 0 ? '分片读取失败，未能完成搜索' : '无匹配结果'}
             </p>
           )}
@@ -440,7 +442,11 @@ function renderSnippet(snippet: string, terms: string[]) {
   const { segments } = renderText(snippet, terms);
   return segments.map((s, i) => {
     if (s.type === 'search') {
-      return <mark key={i} className="rounded bg-yellow-200 px-0.5">{s.text}</mark>;
+      return (
+        <mark key={i} className="rounded-sm bg-system-yellow/40 px-0.5 text-foreground">
+          {s.text}
+        </mark>
+      );
     }
     return <span key={i}>{s.text}</span>;
   });

@@ -14,7 +14,7 @@ export function AlbumGrid({ items, onOpen }: AlbumGridProps) {
 
   return (
     <div
-      className="grid w-full max-w-[320px] gap-0.5 overflow-hidden rounded-xl"
+      className="grid w-full max-w-[320px] gap-[2px] overflow-hidden rounded-ios-card"
       // minmax(0,1fr) keeps every column shrinkable so a wide thumbnail cannot
       // push the bubble past the screen edge.
       style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
@@ -38,7 +38,7 @@ function Thumb({
 
   if (failed) {
     return (
-      <div className="flex aspect-square items-center justify-center bg-muted text-xs text-muted-foreground">
+      <div className="flex aspect-square items-center justify-center bg-muted text-ios-caption1 text-muted-foreground">
         [图片]
       </div>
     );
@@ -49,7 +49,7 @@ function Thumb({
       type="button"
       onClick={onClick}
       aria-label={`查看第 ${index + 1} / ${total} 张媒体`}
-      className="relative aspect-square w-full overflow-hidden bg-muted transition-opacity active:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+      className="relative aspect-square w-full overflow-hidden rounded-ios-tile bg-muted transition-opacity active:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
     >
       <img
         src={item.thumbSrc}
@@ -66,7 +66,7 @@ function Thumb({
             </div>
           </div>
           {item.dur && (
-            <span className="absolute bottom-1 right-1 rounded bg-black/60 px-1 text-[10px] text-white">
+            <span className="absolute bottom-1 right-1 rounded bg-black/60 px-1 text-ios-caption2 text-white">
               {fmtDur(item.dur)}
             </span>
           )}
