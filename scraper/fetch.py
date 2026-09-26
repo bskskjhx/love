@@ -250,14 +250,21 @@ async def pull(client, entity, store, deadline, base, username):
             )
 
 
-async def fetch_chat(client, store, username, deadline):
+async def fetch_chat(client, store, username, deadline, entity_map):
     base = store.count
     entity = None
     try:
         while True:
             try:
                 if entity is None:
-                    entity = await client.get_entity(username)
+                    try:
+                        key = int(username)
+                    except (TypeError, ValueError):
+                        key = None
+                    if key is not None and key in entity_map:
+                        entity = entity_map[key]
+                    else:
+                        entity = await client.get_entity(username)
                     store.set_info(entity.id, title_of(entity))
                     try:
                         if isinstance(entity, Channel):
@@ -318,6 +325,7 @@ async def run():
             except (TypeError, ValueError):
                 pass
         found_ids = {utils.get_peer_id(d.entity) for d in dialogs}
+        entity_map = {utils.get_peer_id(d.entity): d.entity for d in dialogs}
         print("对话缓存条数：%d" % len(dialogs), flush=True)
         for tid in target_ids:
             print("目标 ID %d 是否在缓存中：%s" % (tid, tid in found_ids), flush=True)
@@ -332,7 +340,7 @@ async def run():
             before = store.count
             if time.monotonic() < deadline:
                 try:
-                    await fetch_chat(client, store, username, deadline)
+                    await fetch_chat(client, store, username, deadline, entity_map)
                 except Exception as e:
                     print("[%s] 出错：%s: %s" % (username, type(e).__name__, e), file=sys.stderr)
                     failed.append(username)
