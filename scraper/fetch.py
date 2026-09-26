@@ -4,7 +4,7 @@ import os
 import sys
 import time
 
-from telethon import TelegramClient
+from telethon import TelegramClient, utils
 from telethon.errors import FloodWaitError
 from telethon.sessions import StringSession
 from telethon.tl.types import Channel, Chat, MessageEmpty, MessageService
@@ -310,7 +310,17 @@ async def run():
             return 1
         me = await client.get_me()
         print("当前账号：%s" % (me.phone or me.username or me.id), flush=True)
-        await client.get_dialogs()
+        dialogs = await client.get_dialogs(limit=None)
+        target_ids = set()
+        for c in chats:
+            try:
+                target_ids.add(int(c))
+            except (TypeError, ValueError):
+                pass
+        found_ids = {utils.get_peer_id(d.entity) for d in dialogs}
+        print("对话缓存条数：%d" % len(dialogs), flush=True)
+        for tid in target_ids:
+            print("目标 ID %d 是否在缓存中：%s" % (tid, tid in found_ids), flush=True)
         for username in chats:
             try:
                 store = Store(DATA_DIR, username, chunk_size)
