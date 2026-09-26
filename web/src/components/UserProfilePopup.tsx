@@ -126,21 +126,41 @@ export function UserProfilePopup({ username, userId, onClose, avatarUrl }: UserP
                 </div>
               ) : (
                 <div className="space-y-2 text-sm">
-                  <button
-                    type="button"
-                    onClick={copyId}
-                    className="flex w-full min-w-0 items-center justify-between gap-2 rounded-lg bg-secondary px-3 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    <span className="shrink-0 text-muted-foreground">用户ID</span>
-                    <span className="flex min-w-0 items-center gap-1.5 text-foreground">
-                      <span className="break-all">{userId}</span>
-                      {copied ? (
-                        <Check size={14} className="shrink-0 text-green-500" aria-hidden="true" />
-                      ) : (
-                        <Copy size={14} className="shrink-0 text-muted-foreground" aria-hidden="true" />
-                      )}
-                    </span>
-                  </button>
+                  <div>
+                    <button
+                      type="button"
+                      onClick={copyId}
+                      className="flex w-full min-w-0 items-center justify-between gap-2 rounded-lg bg-secondary px-3 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <span className="shrink-0 text-muted-foreground">用户ID</span>
+                      <span className="flex min-w-0 items-center gap-1.5 text-foreground">
+                        <span className="break-all">{userId}</span>
+                        {copied ? (
+                          <Check size={14} className="shrink-0 text-green-500" aria-hidden="true" />
+                        ) : (
+                          <Copy size={14} className="shrink-0 text-muted-foreground" aria-hidden="true" />
+                        )}
+                      </span>
+                    </button>
+                    {/* Copy confirmation embedded in the flow, directly under the
+                        row it confirms. The row expands and collapses in place
+                        instead of a floating overlay, so the card stays one
+                        block. Copy stays mounted so the live region announces. */}
+                    <div
+                      role="status"
+                      aria-live="polite"
+                      className={`grid transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none ${
+                        copied ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+                      }`}
+                    >
+                      <div className="min-h-0 overflow-hidden">
+                        <span className="mt-1.5 inline-flex items-center gap-1 rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-600">
+                          <Check size={12} aria-hidden="true" />
+                          已复制用户ID
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                   {profile?.b && (
                     <div className="rounded-lg bg-secondary px-3 py-2">
                       <p className="text-muted-foreground">简介</p>
@@ -158,24 +178,6 @@ export function UserProfilePopup({ username, userId, onClose, avatarUrl }: UserP
                 </div>
               )}
             </>
-          )}
-        </div>
-
-        {/* Copy confirmation. A floating pill pinned to the foot of the sheet
-            reads at a glance and never reflows the card, unlike an inline line.
-            Always mounted so assistive tech announces the change on update.
-            The sheet is portalled outside the app shell, so it owns its inset. */}
-        <div
-          role="status"
-          aria-live="polite"
-          className="pointer-events-none absolute inset-x-0 flex justify-center px-4"
-          style={{ bottom: 'calc(1rem + var(--app-safe-bottom))' }}
-        >
-          {copied && (
-            <span className="flex items-center gap-1.5 rounded-full bg-foreground/90 px-3 py-1.5 text-xs font-medium text-background shadow-lg animate-in fade-in-0 slide-in-from-bottom-2 duration-200 motion-reduce:animate-none">
-              <Check size={14} aria-hidden="true" />
-              已复制用户ID
-            </span>
           )}
         </div>
       </SheetContent>
