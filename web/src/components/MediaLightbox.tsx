@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { X, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
 import type { LightboxItem } from '@/types';
+import { useRestoreFocus } from '@/hooks/useRestoreFocus';
 import { ZoomableImage } from '@/components/ZoomableImage';
 
 interface MediaLightboxProps {
@@ -15,19 +16,12 @@ export function MediaLightbox({ items, start, onClose, username }: MediaLightbox
   const [index, setIndex] = useState(() =>
     items.length === 0 ? 0 : Math.min(Math.max(start, 0), items.length - 1)
   );
-  const restoreFocusRef = useRef<HTMLElement | null>(null);
+  const onCloseAutoFocus = useRestoreFocus();
 
   // Keep the index valid if the array is swapped underneath us.
   useEffect(() => {
     setIndex((i) => (items.length === 0 ? 0 : Math.min(Math.max(i, 0), items.length - 1)));
   }, [items]);
-
-  useEffect(() => {
-    const active = document.activeElement;
-    if (active instanceof HTMLElement && active !== document.body) {
-      restoreFocusRef.current = active;
-    }
-  }, []);
 
   const prev = useCallback(() => setIndex((i) => (i > 0 ? i - 1 : i)), []);
   const next = useCallback(
@@ -65,13 +59,7 @@ export function MediaLightbox({ items, start, onClose, username }: MediaLightbox
         <DialogPrimitive.Overlay className="fixed inset-0 z-[var(--app-z-media-overlay)] bg-black/90 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 motion-reduce:animate-none" />
         <DialogPrimitive.Content
           aria-describedby={undefined}
-          onCloseAutoFocus={(event) => {
-            const target = restoreFocusRef.current;
-            if (target && document.contains(target)) {
-              event.preventDefault();
-              target.focus({ preventScroll: true });
-            }
-          }}
+          onCloseAutoFocus={onCloseAutoFocus}
           // Only a click on the empty surface closes; media and controls are
           // separate elements, so their events never reach this test.
           onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}

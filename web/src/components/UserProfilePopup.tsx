@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ArrowLeft, Copy, Check, Bot, Crown, BadgeCheck, UserX, type LucideIcon } from 'lucide-react';
 import type { UserProfile, UsersMap } from '@/types';
 import { loadUsers } from '@/data';
 import { Avatar } from '@/components/Avatar';
-import { fmtDateFull, copyToClipboard, vibrate } from '@/utils';
+import { fmtDateFull } from '@/utils';
+import { useCopyFeedback } from '@/hooks/useCopyFeedback';
+import { useRestoreFocus } from '@/hooks/useRestoreFocus';
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from '@/components/ui/sheet';
@@ -21,22 +23,9 @@ const COPY_FEEDBACK_MS = 1800;
 export function UserProfilePopup({ username, userId, onClose, avatarUrl }: UserProfilePopupProps) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [copied, setCopied] = useState(false);
   const [name, setName] = useState<string>('');
-  const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const restoreFocusRef = useRef<HTMLElement | null>(null);
-
-  // Opened from a message bubble, so Radix has no Trigger to restore focus to.
-  useEffect(() => {
-    const active = document.activeElement;
-    if (active instanceof HTMLElement && active !== document.body) {
-      restoreFocusRef.current = active;
-    }
-  }, []);
-
-  useEffect(() => () => {
-    if (copiedTimer.current) clearTimeout(copiedTimer.current);
-  }, []);
+  const [copied, copy] = useCopyFeedback<boolean>(COPY_FEEDBACK_MS);
+  const onCloseAutoFocus = useRestoreFocus();
 
   useEffect(() => {
     let cancelled = false;
@@ -52,13 +41,7 @@ export function UserProfilePopup({ username, userId, onClose, avatarUrl }: UserP
     return () => { cancelled = true; };
   }, [username, userId]);
 
-  const copyId = () => {
-    copyToClipboard(String(userId));
-    vibrate(10);
-    setCopied(true);
-    if (copiedTimer.current) clearTimeout(copiedTimer.current);
-    copiedTimer.current = setTimeout(() => setCopied(false), COPY_FEEDBACK_MS);
-  };
+  const copyId = () => copy(true, String(userId));
 
   const deleted = profile?.x || profile?.dl;
   const noProfile = !profile || deleted;
@@ -69,13 +52,7 @@ export function UserProfilePopup({ username, userId, onClose, avatarUrl }: UserP
         side="bottom"
         showCloseButton={false}
         aria-describedby={undefined}
-        onCloseAutoFocus={(event) => {
-          const target = restoreFocusRef.current;
-          if (target && document.contains(target)) {
-            event.preventDefault();
-            target.focus({ preventScroll: true });
-          }
-        }}
+        onCloseAutoFocus={onCloseAutoFocus}
         className="mx-auto flex w-full flex-col overflow-hidden rounded-t-2xl p-0 sm:max-w-md sm:rounded-2xl"
       >
         {/* Fixed header; the back button is this sheet's labelled close entry. */}

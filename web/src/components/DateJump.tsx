@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ChatMeta } from '@/types';
 import { loadChunk } from '@/data';
+import { useRestoreFocus } from '@/hooks/useRestoreFocus';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
@@ -18,17 +19,9 @@ export function DateJump({ meta, username, onClose, onJump }: DateJumpProps) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const aliveRef = useRef(true);
-  const restoreFocusRef = useRef<HTMLElement | null>(null);
+  const onCloseAutoFocus = useRestoreFocus();
 
-  // Opened from a header button rather than a Radix Trigger, so remember what
-  // was focused and hand it back when the dialog closes.
-  useEffect(() => {
-    const active = document.activeElement;
-    if (active instanceof HTMLElement && active !== document.body) {
-      restoreFocusRef.current = active;
-    }
-    return () => { aliveRef.current = false; };
-  }, []);
+  useEffect(() => () => { aliveRef.current = false; }, []);
 
   const handleJump = async () => {
     if (!date || busy) return;
@@ -43,35 +36,26 @@ export function DateJump({ meta, username, onClose, onJump }: DateJumpProps) {
     const targetStart = new Date(date).getTime() / 1000;
     const targetEnd = targetStart + 86400;
 
-    // Binary search for the chunk containing this date.
+    // Lowest chunk whose range ends on or after the target day — that is the
+    // first chunk that can contain it. When the day falls in a gap between
+    // chunks, whichever of the two neighbouring boundary dates sits closer wins.
     let lo = 0;
     let hi = meta.chunks.length - 1;
-    let best = meta.chunks[meta.chunks.length - 1];
-
+    let idx = hi;
     while (lo <= hi) {
-      const mid = Math.floor((lo + hi) / 2);
-      const c = meta.chunks[mid];
-      if (c.last_date >= targetStart) {
-        // Check if this is better than previous
-        if (c.first_date <= targetEnd) {
-          // Check previous chunk too
-          if (mid > 0) {
-            const prev = meta.chunks[mid - 1];
-            if (Math.abs(prev.last_date - targetStart) < Math.abs(c.first_date - targetEnd)) {
-              best = prev;
-            } else {
-              best = c;
-            }
-          } else {
-            best = c;
-          }
-          break;
-        }
+      const mid = (lo + hi) >> 1;
+      if (meta.chunks[mid].last_date >= targetStart) {
+        idx = mid;
         hi = mid - 1;
       } else {
         lo = mid + 1;
       }
     }
+    const next = meta.chunks[idx];
+    const prev = idx > 0 ? meta.chunks[idx - 1] : null;
+    const best = prev && Math.abs(prev.last_date - targetStart) < Math.abs(next.first_date - targetEnd)
+      ? prev
+      : next;
 
     try {
       const msgs = await loadChunk(username, best.file);
@@ -96,13 +80,7 @@ export function DateJump({ meta, username, onClose, onJump }: DateJumpProps) {
       <DialogContent
         showCloseButton={false}
         aria-describedby={undefined}
-        onCloseAutoFocus={(event) => {
-          const target = restoreFocusRef.current;
-          if (target && document.contains(target)) {
-            event.preventDefault();
-            target.focus({ preventScroll: true });
-          }
-        }}
+        onCloseAutoFocus={onCloseAutoFocus}
         className="max-w-sm p-4"
         style={{ paddingBottom: 'calc(1rem + var(--app-safe-bottom))' }}
       >

@@ -4,7 +4,7 @@ import type { ChatMeta, Message } from '@/types';
 import { loadChunk } from '@/data';
 import { fmtTimeShort, nameColor, senderName } from '@/utils';
 import { renderText } from '@/components/textRender';
-import { useIsMobile, MOBILE_MEDIA_QUERY } from '@/hooks/useIsMobile';
+import { useIsMobile } from '@/hooks/useIsMobile';
 import { useVisualViewport } from '@/hooks/useVisualViewport';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -26,6 +26,9 @@ const PAGE_SIZE = 50;
 const SEARCH_DEBOUNCE_MS = 400;
 
 export function SearchPanel({ username, meta, onClose, onJumpTo }: SearchPanelProps) {
+  const isMobile = useIsMobile();
+  const viewport = useVisualViewport();
+
   const [query, setQuery] = useState('');
   const [sender, setSender] = useState('');
   const [dateFrom, setDateFrom] = useState('');
@@ -33,18 +36,13 @@ export function SearchPanel({ username, meta, onClose, onJumpTo }: SearchPanelPr
   const [onlyMedia, setOnlyMedia] = useState(false);
   // Filters start collapsed on phones to keep the result list tall, and
   // expanded on desktop where there is room for them.
-  const [showFilters, setShowFilters] = useState(
-    () => !window.matchMedia(MOBILE_MEDIA_QUERY).matches
-  );
+  const [showFilters, setShowFilters] = useState(() => !isMobile);
   const [results, setResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [progress, setProgress] = useState({ done: 0, total: 0 });
   const [totalHits, setTotalHits] = useState(0);
   const [failedChunks, setFailedChunks] = useState(0);
   const [shown, setShown] = useState(PAGE_SIZE);
-
-  const isMobile = useIsMobile();
-  const viewport = useVisualViewport();
 
   /**
    * Monotonic query generation. Every new query (and every unmount) bumps it,
@@ -90,6 +88,27 @@ export function SearchPanel({ username, meta, onClose, onJumpTo }: SearchPanelPr
     const allResults: SearchResult[] = [];
     let hits = 0;
     let failed = 0;
+    let scanned = 0;
+    let frame = 0;
+
+    /**
+     * Publishes the running totals at most once per frame. An archive can hold
+     * hundreds of chunks, and re-rendering the whole result list once per chunk
+     * would cost more than the search itself. The call after the loop below is
+     * the synchronous final one, so the last chunk never waits on a frame.
+     */
+    const publish = () => {
+      frame = 0;
+      if (!isCurrent()) return;
+      setResults([...allResults]);
+      setTotalHits(hits);
+      setFailedChunks(failed);
+      setProgress({ done: scanned, total: meta.chunks.length });
+    };
+
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(publish);
+    };
 
     for (let ci = meta.chunks.length - 1; ci >= 0; ci--) {
       if (!isCurrent()) return;
@@ -154,13 +173,13 @@ export function SearchPanel({ username, meta, onClose, onJumpTo }: SearchPanelPr
       allResults.push(...chunkResults);
       if (!isCurrent()) return;
 
-      setResults([...allResults]);
-      setTotalHits(hits);
-      setFailedChunks(failed);
-      setProgress({ done: meta.chunks.length - ci, total: meta.chunks.length });
+      scanned = meta.chunks.length - ci;
+      schedule();
     }
 
+    if (frame) cancelAnimationFrame(frame);
     if (!isCurrent()) return;
+    publish();
     setSearching(false);
   }, [meta, username, terms, sender, dateFrom, dateTo, onlyMedia, hasFilter]);
 

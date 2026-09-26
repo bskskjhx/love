@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Search, X, RefreshCw } from 'lucide-react';
 import type { ChatSummary } from '@/types';
 import { fmtListDate } from '@/utils';
 import { loadChats, refreshChats, loadAvatarIndex } from '@/data';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { Avatar } from '@/components/Avatar';
 import { Input } from '@/components/ui/input';
 
@@ -13,15 +14,20 @@ interface ChatListProps {
 
 type TimeFilter = 'all' | '7d' | '30d';
 
-const TIME_FILTERS: { value: TimeFilter; label: string }[] = [
+const TIME_FILTERS: { value: TimeFilter; label: string; days?: number }[] = [
   { value: 'all', label: '全部' },
-  { value: '7d', label: '近7天' },
-  { value: '30d', label: '近30天' },
+  { value: '7d', label: '近7天', days: 7 },
+  { value: '30d', label: '近30天', days: 30 },
 ];
 
 /** Pull-to-refresh travel needed before a release triggers a reload. */
 const PULL_THRESHOLD = 60;
 const PULL_MAX = 80;
+
+/** The search box only earns its space once the list is long enough to scan. */
+const SEARCH_MIN_CHATS = 6;
+
+type ChatAvatars = Record<string, { ok: number; ts: number }>;
 
 export function ChatList({ activeUsername, onSelect }: ChatListProps) {
   const [chats, setChats] = useState<ChatSummary[]>([]);
@@ -29,13 +35,7 @@ export function ChatList({ activeUsername, onSelect }: ChatListProps) {
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
-  const [avatarIdx, setAvatarIdx] = useState<Record<string, { ok: number; ts: number }>>({});
-  const [showSearch, setShowSearch] = useState(false);
-
-  const pullState = useRef({ pulling: false, startY: 0, dist: 0 });
-  const [pullDist, setPullDist] = useState(0);
-  const [refreshing, setRefreshing] = useState(false);
-  const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [avatarIdx, setAvatarIdx] = useState<ChatAvatars>({});
   const listRef = useRef<HTMLDivElement>(null);
 
   /** Avatars are fetched at most once per chat, so this set guards re-entry. */
@@ -44,9 +44,7 @@ export function ChatList({ activeUsername, onSelect }: ChatListProps) {
   const fetchChats = useCallback(async (isRefresh?: boolean) => {
     try {
       setError(null);
-      const data = isRefresh ? await refreshChats() : await loadChats();
-      setChats(data);
-      if (data.length >= 6) setShowSearch(true);
+      setChats(isRefresh ? await refreshChats() : await loadChats());
     } catch {
       setError('加载失败');
     } finally {
@@ -58,90 +56,50 @@ export function ChatList({ activeUsername, onSelect }: ChatListProps) {
     fetchChats();
   }, [fetchChats]);
 
-  const filtered = chats.filter((c) => {
-    if (timeFilter !== 'all') {
-      const days = timeFilter === '7d' ? 7 : 30;
-      const cutoff = Date.now() / 1000 - days * 86400;
-      if (c.last_date < cutoff) return false;
-    }
-    if (query.trim()) {
-      const terms = query.trim().toLowerCase().split(/\s+/);
-      const hay = `${c.title || ''} ${c.username}`.toLowerCase();
-      return terms.every((t) => hay.includes(t));
-    }
-    return true;
-  });
-
-  const sorted = [...filtered].sort((a, b) => b.last_date - a.last_date);
+  const visible = useMemo(() => {
+    const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    const days = TIME_FILTERS.find((f) => f.value === timeFilter)?.days;
+    const cutoff = days ? Date.now() / 1000 - days * 86400 : 0;
+    return chats
+      .filter((c) => {
+        if (days && c.last_date < cutoff) return false;
+        if (terms.length === 0) return true;
+        const hay = `${c.title || ''} ${c.username}`.toLowerCase();
+        return terms.every((t) => hay.includes(t));
+      })
+      .sort((a, b) => b.last_date - a.last_date);
+  }, [chats, query, timeFilter]);
 
   const loadAvatars = useCallback(async (list: ChatSummary[]) => {
     const pending = list.filter((c) => !requestedAvatars.current.has(c.username));
-    for (const c of pending) {
-      requestedAvatars.current.add(c.username);
+    if (pending.length === 0) return;
+    for (const c of pending) requestedAvatars.current.add(c.username);
+
+    // Every index is an independent file; fetch them together rather than
+    // walking the list one round trip at a time.
+    const loaded = await Promise.all(pending.map(async (c): Promise<[string, { ok: number; ts: number }] | null> => {
       const idx = await loadAvatarIndex(c.username);
-      if (idx.chat?.ok) {
-        setAvatarIdx((prev) => ({ ...prev, [c.username]: { ok: idx.chat!.ok, ts: idx.chat!.ts } }));
-      }
-    }
+      const chat = idx.chat;
+      return chat?.ok ? [c.username, { ok: chat.ok, ts: chat.ts }] : null;
+    }));
+
+    setAvatarIdx((prev) => {
+      const next = { ...prev };
+      for (const entry of loaded) if (entry) next[entry[0]] = entry[1];
+      return next;
+    });
   }, []);
 
   useEffect(() => {
     if (chats.length > 0) loadAvatars(chats);
   }, [chats, loadAvatars]);
 
-  useEffect(() => () => {
-    if (refreshTimer.current) clearTimeout(refreshTimer.current);
-  }, []);
-
-  const cancelPull = () => {
-    pullState.current = { pulling: false, startY: 0, dist: 0 };
-    setPullDist(0);
-  };
-
-  const onTouchStart = (e: React.TouchEvent) => {
-    const el = listRef.current;
-    // One finger only, at the very top, and never while a refresh is in flight.
-    if (!el || e.touches.length !== 1 || refreshing || el.scrollTop > 0) {
-      if (e.touches.length > 1) cancelPull();
-      return;
-    }
-    pullState.current = { pulling: true, startY: e.touches[0].clientY, dist: 0 };
-  };
-
-  const onTouchMove = (e: React.TouchEvent) => {
-    if (!pullState.current.pulling) return;
-    if (e.touches.length !== 1) {
-      cancelPull();
-      return;
-    }
-    const el = listRef.current;
-    if (!el || el.scrollTop > 0) {
-      cancelPull();
-      return;
-    }
-    const delta = e.touches[0].clientY - pullState.current.startY;
-    // Pushing up cancels the gesture rather than just hiding the indicator.
-    if (delta <= 0) {
-      cancelPull();
-      return;
-    }
-    const damped = Math.min(PULL_MAX, delta * 0.5);
-    pullState.current.dist = damped;
-    setPullDist(damped);
-  };
-
-  const onTouchEnd = async () => {
-    if (!pullState.current.pulling) return;
-    const reached = pullState.current.dist >= PULL_THRESHOLD;
-    pullState.current = { pulling: false, startY: 0, dist: 0 };
-    setPullDist(0);
-    if (!reached) return;
-
-    setRefreshing(true);
-    await fetchChats(true);
-    if (refreshTimer.current) clearTimeout(refreshTimer.current);
-    refreshTimer.current = setTimeout(() => setRefreshing(false), 600);
-  };
+  const { distance: pullDist, refreshing, handlers: pullHandlers } = usePullToRefresh({
+    scrollRef: listRef,
+    threshold: PULL_THRESHOLD,
+    max: PULL_MAX,
+    onRefresh: () => fetchChats(true),
+  });
 
   const clearFilters = () => {
     setQuery('');
@@ -150,7 +108,7 @@ export function ChatList({ activeUsername, onSelect }: ChatListProps) {
 
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-col bg-background">
-      {showSearch && (
+      {chats.length >= SEARCH_MIN_CHATS && (
         <div className="shrink-0 border-b border-border p-2">
           <div className="flex min-h-11 items-center gap-2 rounded-lg bg-muted px-2.5">
             <Search size={16} className="shrink-0 text-muted-foreground" aria-hidden="true" />
@@ -192,14 +150,7 @@ export function ChatList({ activeUsername, onSelect }: ChatListProps) {
         </div>
       )}
 
-      <div
-        ref={listRef}
-        className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
-        onTouchCancel={cancelPull}
-      >
+      <div ref={listRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain" {...pullHandlers}>
         <div className="flex justify-center" style={{ height: pullDist }}>
           <RefreshCw
             size={20}
@@ -227,7 +178,7 @@ export function ChatList({ activeUsername, onSelect }: ChatListProps) {
           </div>
         )}
 
-        {!loading && !error && sorted.length === 0 && (
+        {!loading && !error && visible.length === 0 && (
           <div className="flex flex-col items-center justify-center py-8 text-sm text-muted-foreground">
             {chats.length === 0 ? (
               <p>暂无群组</p>
@@ -247,20 +198,25 @@ export function ChatList({ activeUsername, onSelect }: ChatListProps) {
         )}
 
         <div className="divide-y divide-border">
-          {sorted.map((c) => {
+          {visible.map((c) => {
             const av = avatarIdx[c.username];
-            const avatarSrc = av?.ok ? `./data/${c.username}/avatars/chat.jpg?t=${av.ts}` : undefined;
+            const isActive = activeUsername === c.username;
             return (
               <button
                 key={c.username}
                 type="button"
                 onClick={() => onSelect(c.username)}
-                aria-current={activeUsername === c.username ? 'true' : undefined}
+                aria-current={isActive ? 'true' : undefined}
                 className={`flex w-full min-w-0 items-center gap-3 px-3 py-2.5 text-left transition hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${
-                  activeUsername === c.username ? 'bg-accent' : ''
+                  isActive ? 'bg-accent' : ''
                 }`}
               >
-                <Avatar src={avatarSrc} name={c.title || c.username} seed={c.username} size={48} />
+                <Avatar
+                  src={av?.ok ? `./data/${c.username}/avatars/chat.jpg?t=${av.ts}` : undefined}
+                  name={c.title || c.username}
+                  seed={c.username}
+                  size={48}
+                />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
                     <span className="truncate text-sm font-medium text-foreground">

@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
 import { Copy, Link2, ExternalLink, CornerUpLeft, X, type LucideIcon } from 'lucide-react';
 import type { Message } from '@/types';
-import { copyToClipboard, vibrate, isAnon } from '@/utils';
+import { isAnon } from '@/utils';
+import { useCopyFeedback } from '@/hooks/useCopyFeedback';
+import { useRestoreFocus } from '@/hooks/useRestoreFocus';
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from '@/components/ui/sheet';
@@ -13,23 +14,12 @@ interface ActionMenuProps {
   onJumpTo: (msgId: number) => void;
 }
 
+/** How long a menu row reads "已复制" before reverting to its label. */
+const COPY_FEEDBACK_MS = 1500;
+
 export function ActionMenu({ msg, username, onClose, onJumpTo }: ActionMenuProps) {
-  const [copied, setCopied] = useState<string | null>(null);
-  const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const restoreFocusRef = useRef<HTMLElement | null>(null);
-
-  // Opened by a long press, so Radix has no Trigger to hand focus back to.
-  // Remember what was focused and restore it on close.
-  useEffect(() => {
-    const active = document.activeElement;
-    if (active instanceof HTMLElement && active !== document.body) {
-      restoreFocusRef.current = active;
-    }
-  }, []);
-
-  useEffect(() => () => {
-    if (copiedTimer.current) clearTimeout(copiedTimer.current);
-  }, []);
+  const [copied, copy] = useCopyFeedback<string>(COPY_FEEDBACK_MS);
+  const onCloseAutoFocus = useRestoreFocus();
 
   const showCopyLink = !!username;
   const showCopyText = !!msg.t;
@@ -38,21 +28,8 @@ export function ActionMenu({ msg, username, onClose, onJumpTo }: ActionMenuProps
 
   const baseUrl = window.location.href.split('#')[0];
 
-  const doCopy = (text: string, key: string) => {
-    copyToClipboard(text);
-    vibrate(10);
-    setCopied(key);
-    if (copiedTimer.current) clearTimeout(copiedTimer.current);
-    copiedTimer.current = setTimeout(() => setCopied(null), 1500);
-  };
-
-  const copyLink = () => {
-    doCopy(`${baseUrl}#/${username}/${msg.i}`, 'link');
-  };
-
-  const copyText = () => {
-    doCopy(msg.t || '', 'text');
-  };
+  const copyLink = () => copy('link', `${baseUrl}#/${username}/${msg.i}`);
+  const copyText = () => copy('text', msg.t || '');
 
   const openTelegram = () => {
     window.open(`https://t.me/${username}/${msg.i}`, '_blank', 'noopener,noreferrer');
@@ -70,13 +47,7 @@ export function ActionMenu({ msg, username, onClose, onJumpTo }: ActionMenuProps
         side="bottom"
         showCloseButton={false}
         aria-describedby={undefined}
-        onCloseAutoFocus={(event) => {
-          const target = restoreFocusRef.current;
-          if (target && document.contains(target)) {
-            event.preventDefault();
-            target.focus({ preventScroll: true });
-          }
-        }}
+        onCloseAutoFocus={onCloseAutoFocus}
         className="mx-auto w-full max-w-sm rounded-t-2xl p-2 sm:rounded-2xl"
         style={{ paddingBottom: 'calc(0.5rem + var(--app-safe-bottom))' }}
       >

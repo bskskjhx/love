@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Download, MapPin, User as UserIcon } from 'lucide-react';
 import type { Message } from '@/types';
 import {
-  fmtDur, fmtBytes, mediaLabel, mediaExt, buildMediaUrl,
+  fmtDur, fmtBytes, mediaLabel, mediaExt, buildMediaUrl, truncate,
 } from '@/utils';
 import { renderText } from '@/components/textRender';
 import { VoicePlayer } from '@/components/VoicePlayer';
@@ -12,7 +12,6 @@ import type { AlbumItem, LightboxItem } from '@/types';
 interface MessageContentProps {
   msg: Message;
   username: string;
-  searchTerms?: string[];
   onOpenLightbox: (items: LightboxItem[], index: number) => void;
   onJumpTo: (msgId: number) => void;
   messagesById: Map<number, Message>;
@@ -23,12 +22,12 @@ function mediaAspect(msg: Message): string | undefined {
   return msg.mw && msg.mh ? `${msg.mw} / ${msg.mh}` : undefined;
 }
 
-export function MessageContent({ msg, username, searchTerms, onOpenLightbox, onJumpTo, messagesById }: MessageContentProps) {
+export function MessageContent({ msg, username, onOpenLightbox, onJumpTo, messagesById }: MessageContentProps) {
   return (
     <div className="min-w-0 space-y-1">
       {msg.f && <ForwardMark text={msg.f} />}
       {msg.r && <ReplyRef msgId={msg.r} messagesById={messagesById} onJump={onJumpTo} />}
-      <TextContent text={msg.t} searchTerms={searchTerms} />
+      <TextContent text={msg.t} />
       <MediaContent msg={msg} username={username} onOpenLightbox={onOpenLightbox} />
       {msg.pl && <PollView poll={msg.pl} />}
       {msg.geo && <GeoView geo={msg.geo} />}
@@ -59,13 +58,9 @@ function ReplyRef({ msgId, messagesById, onJump }: { msgId: number; messagesById
   );
 }
 
-function truncate(s: string, max: number): string {
-  return s.length <= max ? s : s.substring(0, max) + '…';
-}
-
-function TextContent({ text, searchTerms }: { text?: string; searchTerms?: string[] }) {
+function TextContent({ text }: { text?: string }) {
   if (!text) return null;
-  const { segments } = renderText(text, searchTerms);
+  const { segments } = renderText(text);
   return (
     <p className="min-w-0 whitespace-pre-wrap break-words text-sm leading-relaxed">
       {segments.map((seg, i) => {
@@ -78,9 +73,6 @@ function TextContent({ text, searchTerms }: { text?: string; searchTerms?: strin
         }
         if (seg.type === 'command') {
           return <span key={i} className="rounded bg-accent px-0.5 text-primary">{seg.text}</span>;
-        }
-        if (seg.type === 'search') {
-          return <mark key={i} className="rounded bg-yellow-200 px-0.5">{seg.text}</mark>;
         }
         return <span key={i}>{seg.text}</span>;
       })}

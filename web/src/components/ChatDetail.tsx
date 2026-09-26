@@ -9,7 +9,8 @@ import {
 } from '@/utils';
 import { Avatar } from '@/components/Avatar';
 import { useIsMobile } from '@/hooks/useIsMobile';
-import { MessageItem, useAlbumGroups } from '@/components/MessageItem';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import { MessageItem, buildAlbumGroups } from '@/components/MessageItem';
 import { MediaLightbox } from '@/components/MediaLightbox';
 import { UserProfilePopup } from '@/components/UserProfilePopup';
 import { ActionMenu } from '@/components/ActionMenu';
@@ -21,7 +22,6 @@ interface ChatDetailProps {
   username: string;
   initialMsgId?: number;
   onBack: () => void;
-  onOpenProfile?: (userId: string | number) => void;
 }
 
 interface ViewState {
@@ -30,6 +30,10 @@ interface ViewState {
   messages: Message[];
 }
 
+/** Pull travel needed before a release refreshes the newest chunk. */
+const PULL_THRESHOLD = 56;
+const PULL_MAX = 70;
+
 export function ChatDetail({ username, initialMsgId, onBack }: ChatDetailProps) {
   const [meta, setMeta] = useState<ChatMeta | null>(null);
   const [view, setView] = useState<ViewState | null>(null);
@@ -37,7 +41,7 @@ export function ChatDetail({ username, initialMsgId, onBack }: ChatDetailProps) 
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [lightbox, setLightbox] = useState<{ items: LightboxItem[]; index: number } | null>(null);
-  const [actionMenu, setActionMenu] = useState<{ msg: Message } | null>(null);
+  const [actionMenu, setActionMenu] = useState<Message | null>(null);
   const [profileUser, setProfileUser] = useState<string | number | null>(null);
   const [avatarIdx, setAvatarIdx] = useState<AvatarIndex>({});
   const [chatAvatar, setChatAvatar] = useState<string | undefined>();
@@ -45,7 +49,6 @@ export function ChatDetail({ username, initialMsgId, onBack }: ChatDetailProps) 
   const [showBackToBottom, setShowBackToBottom] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [dateOpen, setDateOpen] = useState(false);
-  const [pinnedPreview, setPinnedPreview] = useState<string | null>(null);
 
   const genRef = useRef(0);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -54,9 +57,12 @@ export function ChatDetail({ username, initialMsgId, onBack }: ChatDetailProps) 
   const msgRefs = useRef<Map<number, HTMLElement>>(new Map());
   const metaRef = useRef<ChatMeta | null>(null);
   const viewRef = useRef<ViewState | null>(null);
+  /** Mirrors `busy` so the chunk loaders can keep a stable identity. */
+  const busyRef = useRef(false);
 
   metaRef.current = meta;
   viewRef.current = view;
+  busyRef.current = busy;
 
   const messagesById = useMemo(() => {
     const m = new Map<number, Message>();
@@ -66,13 +72,28 @@ export function ChatDetail({ username, initialMsgId, onBack }: ChatDetailProps) 
 
   const albumGroups = useMemo(() => {
     if (!view) return new Map<number, AlbumItem[]>();
-    return useAlbumGroups(view.messages, username);
+    return buildAlbumGroups(view.messages, username);
   }, [view, username]);
 
-  // Load meta and initial chunk
+  const userAvatarUrl = useCallback((uid: string) => {
+    const ts = avatarIdx.ok?.[uid];
+    return ts ? buildUserAvatarUrl(username, uid, ts) : undefined;
+  }, [avatarIdx, username]);
+
+  const scrollToMsg = useCallback((msgId: number, highlight?: boolean) => {
+    const el = msgRefs.current.get(msgId);
+    if (!el) return;
+    el.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'center' });
+    if (!highlight) return;
+    setHighlightId(msgId);
+    setTimeout(() => setHighlightId(null), 2200);
+  }, []);
+
+  // Load meta and the chunk the deep link points at (or the newest one).
   useEffect(() => {
-    let cancelled = false;
     const gen = ++genRef.current;
+    const isCurrent = () => gen === genRef.current;
+
     setLoading(true);
     setError(null);
     setView(null);
@@ -80,135 +101,121 @@ export function ChatDetail({ username, initialMsgId, onBack }: ChatDetailProps) 
     setAvatarIdx({});
     setChatAvatar(undefined);
 
-    loadMeta(username).then(async (m) => {
-      if (cancelled || gen !== genRef.current) return;
-      setMeta(m);
-      if (m.pinned_id) setPinnedPreview('置顶消息');
+    const fail = () => {
+      if (!isCurrent()) return;
+      setError('加载失败');
+      setLoading(false);
+    };
 
-      let targetChunk = m.chunks[m.chunks.length - 1];
-      if (initialMsgId) {
-        const found = m.chunks.find((c) => c.first_id <= initialMsgId && c.last_id >= initialMsgId);
-        if (found) targetChunk = found;
-      }
-
+    (async () => {
       try {
-        const msgs = await loadChunk(username, targetChunk.file);
-        if (cancelled || gen !== genRef.current) return;
-        setView({ first: m.chunks.indexOf(targetChunk), last: m.chunks.indexOf(targetChunk), messages: msgs });
+        const m = await loadMeta(username);
+        if (!isCurrent()) return;
+        setMeta(m);
+
+        let target = m.chunks[m.chunks.length - 1];
+        if (initialMsgId) {
+          target = m.chunks.find((c) => c.first_id <= initialMsgId && c.last_id >= initialMsgId) || target;
+        }
+        const idx = m.chunks.indexOf(target);
+
+        const msgs = await loadChunk(username, target.file);
+        if (!isCurrent()) return;
+        setView({ first: idx, last: idx, messages: msgs });
         setLoading(false);
 
-        if (initialMsgId) {
-          setTimeout(() => scrollToMsg(initialMsgId, true), 100);
-        } else {
-          setTimeout(() => {
+        // Let the first paint commit before measuring scroll offsets.
+        setTimeout(() => {
+          if (initialMsgId) {
+            scrollToMsg(initialMsgId, true);
+          } else {
             const el = scrollRef.current;
             if (el) el.scrollTop = el.scrollHeight;
-          }, 50);
-        }
+          }
+        }, initialMsgId ? 100 : 50);
       } catch {
-        if (!cancelled && gen === genRef.current) {
-          setError('加载失败');
-          setLoading(false);
-        }
+        fail();
       }
-    }).catch(() => {
-      if (!cancelled && gen === genRef.current) {
-        setError('加载失败');
-        setLoading(false);
-      }
-    });
+    })();
 
     loadAvatarIndex(username).then((idx) => {
-      if (cancelled || gen !== genRef.current) return;
+      if (!isCurrent()) return;
       setAvatarIdx(idx);
       if (idx.chat?.ok) setChatAvatar(`./data/${username}/avatars/chat.jpg?t=${idx.chat.ts}`);
     });
 
-    return () => { cancelled = true; };
-  }, [username, initialMsgId]);
+    return () => { genRef.current += 1; };
+  }, [username, initialMsgId, scrollToMsg]);
 
-  // Scroll to message
-  const scrollToMsg = useCallback((msgId: number, highlight?: boolean) => {
-    const el = msgRefs.current.get(msgId);
-    if (el) {
-      el.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'center' });
-      if (highlight) {
-        setHighlightId(msgId);
-        setTimeout(() => setHighlightId(null), 2200);
-      }
+  /**
+   * Loads one chunk under the shared busy/generation guards: late responses
+   * from a superseded load never reach `apply`, and `busy` always clears.
+   * `bump` is for loads that replace the view (a jump); appending loads keep
+   * the current generation so an in-flight neighbour load is not orphaned.
+   */
+  const withChunk = useCallback(async (
+    chunkFile: string,
+    bump: boolean,
+    apply: (msgs: Message[]) => void,
+  ) => {
+    const gen = bump ? ++genRef.current : genRef.current;
+    setBusy(true);
+    try {
+      const msgs = await loadChunk(username, chunkFile);
+      if (gen !== genRef.current) return;
+      apply(msgs);
+    } catch {
+      // A failed chunk leaves the view as it was.
+    } finally {
+      if (gen === genRef.current) setBusy(false);
     }
-  }, []);
+  }, [username]);
 
-  // Jump to message (may need to load chunk)
+  // Jump to a message, loading its chunk first if it is not in view.
   const jumpTo = useCallback(async (msgId: number) => {
     const m = metaRef.current;
     if (!m) return;
-    const inView = viewRef.current?.messages.some((msg) => msg.i === msgId);
-    if (inView) {
+    if (viewRef.current?.messages.some((msg) => msg.i === msgId)) {
       scrollToMsg(msgId, true);
       return;
     }
     const chunk = m.chunks.find((c) => c.first_id <= msgId && c.last_id >= msgId);
     if (!chunk) return;
-    const gen = ++genRef.current;
-    setBusy(true);
-    try {
-      const msgs = await loadChunk(username, chunk.file);
-      if (gen !== genRef.current) return;
-      const idx = m.chunks.indexOf(chunk);
+    const idx = m.chunks.indexOf(chunk);
+    await withChunk(chunk.file, true, (msgs) => {
       setView({ first: idx, last: idx, messages: msgs });
       setTimeout(() => scrollToMsg(msgId, true), 100);
-    } catch {
-      // ignore
-    } finally {
-      if (gen === genRef.current) setBusy(false);
-    }
-  }, [username, scrollToMsg]);
+    });
+  }, [scrollToMsg, withChunk]);
 
-  // Lazy load older/newer chunks
   const loadOlder = useCallback(async () => {
     const m = metaRef.current;
     const v = viewRef.current;
-    if (!m || !v || v.first <= 0 || busy) return;
-    const gen = genRef.current;
-    setBusy(true);
-    const prevScroll = scrollRef.current?.scrollTop || 0;
-    const prevHeight = scrollRef.current?.scrollHeight || 0;
-    try {
-      const chunk = m.chunks[v.first - 1];
-      const msgs = await loadChunk(username, chunk.file);
-      if (gen !== genRef.current) return;
+    if (!m || !v || v.first <= 0 || busyRef.current) return;
+    const el = scrollRef.current;
+    const prevScroll = el?.scrollTop || 0;
+    const prevHeight = el?.scrollHeight || 0;
+    await withChunk(m.chunks[v.first - 1].file, false, (msgs) => {
       setView({ first: v.first - 1, last: v.last, messages: [...msgs, ...v.messages] });
+      // Hold the reading position across the prepend.
       requestAnimationFrame(() => {
-        const el = scrollRef.current;
-        if (el) el.scrollTop = prevScroll + (el.scrollHeight - prevHeight);
+        const node = scrollRef.current;
+        if (node) node.scrollTop = prevScroll + (node.scrollHeight - prevHeight);
       });
-    } catch {
-      // ignore
-    } finally {
-      if (gen === genRef.current) setBusy(false);
-    }
-  }, [username, busy]);
+    });
+  }, [withChunk]);
 
   const loadNewer = useCallback(async () => {
     const m = metaRef.current;
     const v = viewRef.current;
-    if (!m || !v || v.last >= m.chunks.length - 1 || busy) return;
-    const gen = genRef.current;
-    setBusy(true);
-    try {
-      const chunk = m.chunks[v.last + 1];
-      const msgs = await loadChunk(username, chunk.file);
-      if (gen !== genRef.current) return;
+    if (!m || !v || v.last >= m.chunks.length - 1 || busyRef.current) return;
+    await withChunk(m.chunks[v.last + 1].file, false, (msgs) => {
       setView({ first: v.first, last: v.last + 1, messages: [...v.messages, ...msgs] });
-    } catch {
-      // ignore
-    } finally {
-      if (gen === genRef.current) setBusy(false);
-    }
-  }, [username, busy]);
+    });
+  }, [withChunk]);
 
-  // Intersection observers for lazy loading
+  // Intersection observers for lazy loading. The loaders keep a stable
+  // identity, so the observers survive every busy/render change.
   useEffect(() => {
     const topObs = new IntersectionObserver(
       (entries) => { if (entries[0]?.isIntersecting) loadOlder(); },
@@ -223,13 +230,12 @@ export function ChatDetail({ username, initialMsgId, onBack }: ChatDetailProps) 
     return () => { topObs.disconnect(); botObs.disconnect(); };
   }, [loadOlder, loadNewer]);
 
-  // Scroll listener for back-to-bottom button
   const onScroll = () => {
     const el = scrollRef.current;
     if (!el) return;
     const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < el.clientHeight * 1.5;
-    const hasNewer = meta && view && view.last < meta.chunks.length - 1;
-    setShowBackToBottom(!nearBottom || !!hasNewer);
+    const hasNewer = !!meta && !!view && view.last < meta.chunks.length - 1;
+    setShowBackToBottom(!nearBottom || hasNewer);
   };
 
   const scrollToBottom = async () => {
@@ -237,16 +243,10 @@ export function ChatDetail({ username, initialMsgId, onBack }: ChatDetailProps) 
     const v = viewRef.current;
     if (!m || !v) return;
     if (v.last < m.chunks.length - 1) {
-      const gen = ++genRef.current;
-      setBusy(true);
-      try {
-        const chunk = m.chunks[m.chunks.length - 1];
-        const msgs = await loadChunk(username, chunk.file);
-        if (gen !== genRef.current) return;
-        setView({ first: v.first, last: m.chunks.length - 1, messages: [...v.messages, ...msgs] });
-      } catch { /* ignore */ } finally {
-        if (gen === genRef.current) setBusy(false);
-      }
+      const last = m.chunks.length - 1;
+      await withChunk(m.chunks[last].file, true, (msgs) => {
+        setView({ first: v.first, last, messages: [...v.messages, ...msgs] });
+      });
     }
     requestAnimationFrame(() => {
       const el = scrollRef.current;
@@ -254,118 +254,61 @@ export function ChatDetail({ username, initialMsgId, onBack }: ChatDetailProps) 
     });
   };
 
-  // Pull-to-refresh
-  const pullRef = useRef({ pulling: false, startY: 0, dist: 0 });
-  const [pullDist, setPullDist] = useState(0);
-  const [refreshing, setRefreshing] = useState(false);
-  const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => () => {
-    if (refreshTimer.current) clearTimeout(refreshTimer.current);
-  }, []);
-
-  const cancelPull = () => {
-    pullRef.current = { pulling: false, startY: 0, dist: 0 };
-    setPullDist(0);
-  };
-
-  const onTouchStart = (e: React.TouchEvent) => {
-    // One finger only, at the very top, and never while a refresh is in flight.
-    if (e.touches.length !== 1) {
-      cancelPull();
-      return;
-    }
-    const el = scrollRef.current;
-    if (!el || refreshing || el.scrollTop > 0) return;
+  // Pull-to-refresh: refetch meta, then pull in whatever chunks are new.
+  const onRefresh = useCallback(async () => {
     const v = viewRef.current;
-    const m = metaRef.current;
-    if (!v || !m || v.last !== m.chunks.length - 1) return;
-    pullRef.current = { pulling: true, startY: e.touches[0].clientY, dist: 0 };
-  };
+    if (!v) return;
+    const newMeta = await refreshMeta(username);
+    const oldChunks = metaRef.current?.chunks.length || 0;
+    const newChunks = newMeta.chunks.length;
 
-  const onTouchMove = (e: React.TouchEvent) => {
-    if (!pullRef.current.pulling) return;
-    if (e.touches.length !== 1) {
-      cancelPull();
+    if (newChunks > oldChunks) {
+      const added = newMeta.chunks.slice(oldChunks);
+      const batches = await Promise.all(added.map((c) => refreshChunk(username, c.file)));
+      setMeta(newMeta);
+      setView({ first: v.first, last: newChunks - 1, messages: [...v.messages, ...batches.flat()] });
       return;
     }
-    const el = scrollRef.current;
-    if (!el || el.scrollTop > 0) {
-      cancelPull();
-      return;
-    }
-    const delta = e.touches[0].clientY - pullRef.current.startY;
-    // Pushing up cancels the gesture instead of leaving a stuck indicator.
-    if (delta <= 0) {
-      cancelPull();
-      return;
-    }
-    const damped = Math.min(70, delta * 0.5);
-    pullRef.current.dist = damped;
-    setPullDist(damped);
-  };
 
-  const onTouchEnd = async () => {
-    if (!pullRef.current.pulling) return;
-    const reached = pullRef.current.dist >= 56;
-    pullRef.current = { pulling: false, startY: 0, dist: 0 };
-    setPullDist(0);
-    if (!reached) return;
-    setRefreshing(true);
-    try {
-      const newMeta = await refreshMeta(username);
+    if (v.last === newChunks - 1) {
+      const msgs = await refreshChunk(username, newMeta.chunks[newChunks - 1].file);
+      const existing = new Set(v.messages.map((x) => x.i));
+      const fresh = msgs.filter((x) => !existing.has(x.i));
+      if (fresh.length > 0) setView({ first: v.first, last: v.last, messages: [...v.messages, ...fresh] });
+    }
+  }, [username]);
+
+  const { distance: pullDist, refreshing, handlers: pullHandlers } = usePullToRefresh({
+    scrollRef,
+    threshold: PULL_THRESHOLD,
+    max: PULL_MAX,
+    // Only the newest chunk can gain messages.
+    canStart: () => {
       const v = viewRef.current;
-      if (!v) return;
-      const oldChunks = metaRef.current?.chunks.length || 0;
-      const newChunks = newMeta.chunks.length;
+      const m = metaRef.current;
+      return !!v && !!m && v.last === m.chunks.length - 1;
+    },
+    onRefresh,
+  });
 
-      if (newChunks > oldChunks) {
-        const newOnes = newMeta.chunks.slice(oldChunks);
-        const allMsgs: Message[] = [];
-        for (const c of newOnes) {
-          const msgs = await refreshChunk(username, c.file);
-          allMsgs.push(...msgs);
-        }
-        setMeta(newMeta);
-        setView({ first: v.first, last: newChunks - 1, messages: [...v.messages, ...allMsgs] });
-      } else if (v.last === newChunks - 1) {
-        const lastChunk = newMeta.chunks[newChunks - 1];
-        const msgs = await refreshChunk(username, lastChunk.file);
-        const existing = new Set(v.messages.map((m) => m.i));
-        const newMsgs = msgs.filter((m) => !existing.has(m.i));
-        if (newMsgs.length > 0) {
-          setView({ first: v.first, last: v.last, messages: [...v.messages, ...newMsgs] });
-        }
-      }
-    } catch {
-      // ignore
-    } finally {
-      if (refreshTimer.current) clearTimeout(refreshTimer.current);
-      refreshTimer.current = setTimeout(() => setRefreshing(false), 600);
-    }
-  };
-
-  // Load pinned preview
-  useEffect(() => {
-    if (meta?.pinned_id && view) {
-      const pinned = view.messages.find((m) => m.i === meta.pinned_id);
-      if (pinned) setPinnedPreview(preview(pinned));
-    }
+  const pinnedPreview = useMemo(() => {
+    if (!meta?.pinned_id) return null;
+    const pinned = view?.messages.find((m) => m.i === meta.pinned_id);
+    return pinned ? preview(pinned) : '置顶消息';
   }, [meta, view]);
 
-  // Update title
   useEffect(() => {
     const title = meta ? (meta as unknown as { title?: string }).title || username : username;
     document.title = `${title} - Telegram 聊天存档`;
   }, [username, meta]);
 
-  const onOpenLightbox = (items: LightboxItem[], index: number) => setLightbox({ items, index });
-  const onActionMenu = (msg: Message) => setActionMenu({ msg });
+  const openProfile = useCallback((userId: string | number) => {
+    if (userId !== '') setProfileUser(userId);
+  }, []);
 
-  const onOpenProfile = (userId: string | number) => {
-    if (userId === '' || userId === undefined) return;
-    setProfileUser(userId);
-  };
+  const openLightbox = useCallback((items: LightboxItem[], index: number) => {
+    setLightbox({ items, index });
+  }, []);
 
   const isNarrow = useIsMobile();
 
@@ -434,10 +377,7 @@ export function ChatDetail({ username, initialMsgId, onBack }: ChatDetailProps) 
         ref={scrollRef}
         className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-14"
         onScroll={onScroll}
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
-        onTouchCancel={cancelPull}
+        {...pullHandlers}
       >
         {loading && (
           <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
@@ -478,28 +418,24 @@ export function ChatDetail({ username, initialMsgId, onBack }: ChatDetailProps) 
             )}
 
             {view.messages.map((msg, idx) => {
-              const prev = view.messages[idx - 1];
-              const next = view.messages[idx + 1];
-              const album = albumGroups.get(msg.i);
               const uid = msg.u !== undefined ? String(msg.u) : (msg.n || '');
-              const userAv = avatarIdx.ok?.[uid] ? buildUserAvatarUrl(username, uid, avatarIdx.ok[uid]) : undefined;
               return (
                 <div key={msg.i} ref={(el) => { if (el) msgRefs.current.set(msg.i, el); }}>
                   <MessageItem
                     msg={msg}
-                    prev={prev}
-                    next={next}
+                    prev={view.messages[idx - 1]}
+                    next={view.messages[idx + 1]}
                     username={username}
                     chatAvatar={chatAvatar}
                     chatTitle={username}
-                    onOpenLightbox={onOpenLightbox}
+                    onOpenLightbox={openLightbox}
                     onJumpTo={jumpTo}
-                    onOpenProfile={onOpenProfile}
-                    onActionMenu={onActionMenu}
+                    onOpenProfile={openProfile}
+                    onActionMenu={setActionMenu}
                     messagesById={messagesById}
                     highlight={highlightId === msg.i}
-                    albumItems={album}
-                    avatarUrl={userAv}
+                    albumItems={albumGroups.get(msg.i)}
+                    avatarUrl={userAvatarUrl(uid)}
                   />
                 </div>
               );
@@ -567,7 +503,7 @@ export function ChatDetail({ username, initialMsgId, onBack }: ChatDetailProps) 
       {/* Action menu */}
       {actionMenu && (
         <ActionMenu
-          msg={actionMenu.msg}
+          msg={actionMenu}
           username={username}
           onClose={() => setActionMenu(null)}
           onJumpTo={jumpTo}
@@ -580,10 +516,9 @@ export function ChatDetail({ username, initialMsgId, onBack }: ChatDetailProps) 
           username={username}
           userId={profileUser}
           onClose={() => setProfileUser(null)}
-          avatarUrl={avatarIdx.ok?.[String(profileUser)] ? buildUserAvatarUrl(username, String(profileUser), avatarIdx.ok[String(profileUser)]) : undefined}
+          avatarUrl={userAvatarUrl(String(profileUser))}
         />
       )}
     </div>
   );
 }
-

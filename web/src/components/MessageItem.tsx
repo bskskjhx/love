@@ -14,11 +14,10 @@ interface MessageItemProps {
   username: string;
   chatAvatar?: string;
   chatTitle?: string;
-  searchTerms?: string[];
   onOpenLightbox: (items: LightboxItem[], index: number) => void;
   onJumpTo: (msgId: number) => void;
   onOpenProfile: (userId: string | number) => void;
-  onActionMenu: (msg: Message, x: number, y: number) => void;
+  onActionMenu: (msg: Message) => void;
   messagesById: Map<number, Message>;
   highlight?: boolean;
   albumItems?: AlbumItem[];
@@ -43,7 +42,7 @@ function isInteractiveTarget(target: EventTarget | null): boolean {
 
 export function MessageItem({
   msg, prev, next, username, chatAvatar, chatTitle,
-  searchTerms, onOpenLightbox, onJumpTo, onOpenProfile, onActionMenu,
+  onOpenLightbox, onJumpTo, onOpenProfile, onActionMenu,
   messagesById, highlight, albumItems, avatarUrl,
 }: MessageItemProps) {
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -85,7 +84,7 @@ export function MessageItem({
     pressTimer.current = setTimeout(() => {
       pressTimer.current = null;
       suppressClick.current = true;
-      onActionMenu(msg, e.clientX, e.clientY);
+      onActionMenu(msg);
     }, LONG_PRESS_MS);
   };
 
@@ -107,7 +106,7 @@ export function MessageItem({
     // Never steal the tap that ends a text selection.
     const selection = window.getSelection();
     if (selection && !selection.isCollapsed && selection.toString()) return;
-    onActionMenu(msg, e.clientX, e.clientY);
+    onActionMenu(msg);
   };
 
   return (
@@ -167,7 +166,6 @@ export function MessageItem({
               <MessageContent
                 msg={msg}
                 username={username}
-                searchTerms={searchTerms}
                 onOpenLightbox={onOpenLightbox}
                 onJumpTo={onJumpTo}
                 messagesById={messagesById}
@@ -186,7 +184,13 @@ export function MessageItem({
   );
 }
 
-export function useAlbumGroups(messages: Message[], username: string): Map<number, AlbumItem[]> {
+/**
+ * Groups every album message into the shared item list its siblings render.
+ *
+ * A plain function, not a hook: it derives from its arguments alone. Callers
+ * memoize on the message array.
+ */
+export function buildAlbumGroups(messages: Message[], username: string): Map<number, AlbumItem[]> {
   const albumMap = new Map<number, AlbumItem[]>();
   const groups = new Map<string, Message[]>();
 
