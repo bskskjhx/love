@@ -308,6 +308,7 @@ async def run():
         if not await client.is_user_authorized():
             print("TG_SESSION 无效或未登录", file=sys.stderr)
             return 1
+        await client.get_dialogs()
         for username in chats:
             try:
                 store = Store(DATA_DIR, username, chunk_size)
