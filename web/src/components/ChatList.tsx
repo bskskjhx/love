@@ -170,7 +170,10 @@ export function ChatList({ activeUsername, onSelect }: ChatListProps) {
         className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-[calc(1.5rem+var(--app-safe-bottom))]"
         {...pullHandlers}
       >
-        <div className="flex justify-center" style={{ height: pullDist }}>
+        {/* `overflow-hidden` is load-bearing: at rest the height is 0 while the
+            icon keeps its own height and a negative margin, so without clipping
+            it escapes the box and reads as a permanently visible refresh button. */}
+        <div className="flex justify-center overflow-hidden" style={{ height: pullDist }}>
           <RefreshCw
             size={20}
             aria-hidden="true"
