@@ -1,0 +1,45 @@
+name: selftest
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'scraper/**'
+
+permissions:
+  contents: read
+
+jobs:
+  selftest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - run: pip install -r scraper/requirements.txt
+
+      - name: Import
+        run: |
+          set -e
+          cd scraper
+          for f in *.py; do
+            m="${f%.py}"
+            echo "import $m"
+            python -c "import $m" || exit 1
+          done
+
+      - name: Selftest
+        run: |
+          set -e
+          cd scraper
+          for f in *.py; do
+            if grep -q -e '--selftest' "$f"; then
+              echo "selftest $f"
+              python "$f" --selftest || exit 1
+            fi
+          done

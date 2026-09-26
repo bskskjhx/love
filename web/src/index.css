@@ -1,0 +1,95 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 240 5.9% 10%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 240 10% 3.9%;
+    --radius: 0.5rem;
+
+    /* Mobile shell contract: consumed by .app-viewport (app shell) only.
+       Portal overlays live outside the shell and must apply their own insets. */
+    --app-safe-top: env(safe-area-inset-top, 0px);
+    --app-safe-right: env(safe-area-inset-right, 0px);
+    --app-safe-bottom: env(safe-area-inset-bottom, 0px);
+    --app-safe-left: env(safe-area-inset-left, 0px);
+
+    /* Minimum hit box for standalone controls on mobile. */
+    --app-touch-target: 44px;
+
+    /* Stacking order. Keep these in sync instead of hand-writing z-* values. */
+    --app-z-header: 10;
+    --app-z-floating: 20;
+    --app-z-overlay: 40;
+    --app-z-dialog: 50;
+    --app-z-media-overlay: 60;
+    --app-z-media: 70;
+  }
+
+  .dark {
+  }
+}
+
+@layer components {
+  /* The app shell: full viewport height, dynamic browser toolbars included,
+     and the only place that consumes the safe-area insets. */
+  .app-viewport {
+    box-sizing: border-box;
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    padding-top: var(--app-safe-top);
+    padding-right: var(--app-safe-right);
+    padding-bottom: var(--app-safe-bottom);
+    padding-left: var(--app-safe-left);
+  }
+}
+
+/* Standalone buttons and toggles get a real 44x44 hit box on mobile.
+   Inline links inside body copy are deliberately exempt. */
+@media (max-width: 767px) {
+  .mobile-touch-target {
+    min-width: var(--app-touch-target);
+    min-height: var(--app-touch-target);
+  }
+}
+
+@media (min-width: 768px) {
+  .time-short { display: none; }
+  .time-full { display: inline !important; }
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
