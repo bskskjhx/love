@@ -110,6 +110,24 @@
   [role="slider"] {
     touch-action: manipulation;
   }
+
+  /* No focus ring on a touch screen.
+     A sheet moves focus to its first item when it opens, and the browsers'
+     `:focus-visible` heuristic reads that programmatic focus as keyboard focus —
+     so the ring lands on a menu row the user only ever touched, and a near-black
+     `--ring` reads as a stray box drawn around it. Tapping gives its feedback
+     through `active:` instead.
+     Only the tap targets are covered: text fields keep their focus styling, since
+     focusing one on a phone is a deliberate act with a keyboard attached to it.
+     A hardware keyboard on a tablet loses its ring here; that is the trade for
+     not being able to tell the two apart from CSS alone.
+     The `html` prefix is load-bearing: `:is(...)` and Tailwind's
+     `focus-visible:ring-*` have equal specificity, so without it this would win
+     only by sitting later in the stylesheet than `@tailwind utilities`. */
+  html :is(a, button, [role="button"]):focus-visible {
+    outline: none;
+    box-shadow: none;
+  }
 }
 
 @media (min-width: 768px) {
