@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Search, SlidersHorizontal, X } from 'lucide-react';
-import type { ChatMeta, Message } from '@/types';
-import { loadChunk } from '@/data';
-import { fmtListDate, fmtTimeShort, hueStyle, senderName, localDayRange } from '@/utils';
+import { Check, ChevronDown, Search, SlidersHorizontal, X } from 'lucide-react';
+import type { AvatarIndex, ChatMeta, Message } from '@/types';
+import { loadAvatarIndex, loadChunk, loadUsers } from '@/data';
+import {
+  buildUserAvatarUrl, fmtListDate, fmtTimeShort, hueStyle, senderName, localDayRange,
+} from '@/utils';
 import { renderText } from '@/components/textRender';
+import { Avatar } from '@/components/Avatar';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { useVisualViewport } from '@/hooks/useVisualViewport';
 import { useBackButtonClose } from '@/hooks/useBackButtonClose';
@@ -20,6 +23,25 @@ export interface SearchPanelProps {
 interface SearchResult {
   msg: Message;
   snippet?: string;
+}
+
+/**
+ * A sender filter is either a picked member or a raw string.
+ *
+ * Picking a member matches on identity (`msg.u`), which is exact and cheaper per
+ * message than a substring scan. The string form is kept as a fallback for the
+ * senders that are not in `users.json` — the fixture's deliberately "unregistered"
+ * `{ n: '未登记访客' }` has a name but no id, and a picker alone could never offer
+ * it.
+ */
+type SenderFilter =
+  | { kind: 'user'; id: string; label: string }
+  | { kind: 'text'; text: string };
+
+interface SenderEntry {
+  id: string;
+  name: string;
+  handle?: string;
 }
 
 const MAX_RESULTS = 2000;
@@ -45,7 +67,7 @@ export function SearchPanel({ username, meta, onClose, onJumpTo }: SearchPanelPr
   useBackButtonClose(true, onClose);
 
   const [query, setQuery] = useState('');
-  const [sender, setSender] = useState('');
+  const [sender, setSender] = useState<SenderFilter>(null);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [onlyMedia, setOnlyMedia] = useState(false);
@@ -58,6 +80,10 @@ export function SearchPanel({ username, meta, onClose, onJumpTo }: SearchPanelPr
   const [totalHits, setTotalHits] = useState(0);
   const [failedChunks, setFailedChunks] = useState(0);
   const [shown, setShown] = useState(PAGE_SIZE);
+  const [senders, setSenders] = useState<SenderEntry[]>([]);
+  const [senderQuery, setSenderQuery] = useState('');
+  const [showSenders, setShowSenders] = useState(false);
+  const [avatarIdx, setAvatarIdx] = useState<AvatarIndex>({});
 
   const inputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
@@ -76,7 +102,7 @@ export function SearchPanel({ username, meta, onClose, onJumpTo }: SearchPanelPr
     [query]
   );
 
-  const filtersActive = !!sender.trim() || !!dateFrom || !!dateTo || onlyMedia;
+  const filtersActive = !!sender || !!dateFrom || !!dateTo || onlyMedia;
   const hasFilter = terms.length > 0 || filtersActive;
 
   const doSearch = useCallback(async () => {
@@ -105,7 +131,7 @@ export function SearchPanel({ username, meta, onClose, onJumpTo }: SearchPanelPr
 
     const fromTs = dateFrom ? localDayRange(dateFrom)[0] : 0;
     const toTs = dateTo ? localDayRange(dateTo)[1] : Infinity;
-    const senderLower = sender.trim().toLowerCase();
+    const senderFilter = sender;
 
     const allResults: SearchResult[] = [];
     let hits = 0;
@@ -163,7 +189,16 @@ export function SearchPanel({ username, meta, onClose, onJumpTo }: SearchPanelPr
       for (let mi = msgs.length - 1; mi >= 0; mi--) {
         const m = msgs[mi];
         if (onlyMedia && !m.m) continue;
-        if (senderLower && !senderName(m).toLowerCase().includes(senderLower)) continue;
+        if (senderFilter) {
+          if (senderFilter.kind === 'user') {
+            // Identity, not a name: a picked member is matched on the id the
+            // message carries, so renaming or two people sharing a name cannot
+            // cross-contaminate the results.
+            if (String(m.u ?? '') !== senderFilter.id) continue;
+          } else if (!senderName(m).toLowerCase().includes(senderFilter.text.toLowerCase())) {
+            continue;
+          }
+        }
         if (dateFrom && m.d < fromTs) continue;
         if (dateTo && m.d >= toTs) continue;
         if (terms.length > 0) {
@@ -246,15 +281,70 @@ export function SearchPanel({ username, meta, onClose, onJumpTo }: SearchPanelPr
     if (debounceRef.current) clearTimeout(debounceRef.current);
   }, []);
 
+  // The roster is users.json rather than a scan of every chunk: it is the
+  // archive's own member list, it costs one request that is already cached, and
+  // its `n` is the very name the result rows render — so a pick and a row can
+  // never disagree about who someone is.
+  useEffect(() => {
+    let cancelled = false;
+    loadUsers(username).then((users) => {
+      if (cancelled) return;
+      setSenders(
+        Object.entries(users)
+          .map(([id, profile]) => ({
+            id,
+            name: profile.n || profile.un || `用户${id}`,
+            handle: profile.un,
+          }))
+          .sort((a, b) => a.name.localeCompare(b.name, 'zh'))
+      );
+    });
+    return () => { cancelled = true; };
+  }, [username]);
+
+  useEffect(() => {
+    let cancelled = false;
+    loadAvatarIndex(username).then((idx) => { if (!cancelled) setAvatarIdx(idx); });
+    return () => { cancelled = true; };
+  }, [username]);
+
   const clearQuery = () => setQuery('');
 
   const clearFilters = () => {
-    setSender('');
+    setSender(null);
+    setSenderQuery('');
     setDateFrom('');
     setDateTo('');
     setOnlyMedia(false);
     setQuery('');
   };
+
+  const senderLabel = sender
+    ? sender.kind === 'user'
+      ? sender.label
+      : `文字：${sender.text}`
+    : '发送者';
+
+  /** The picked member's id, or null. Computed once rather than re-narrowing per row. */
+  const selectedSenderId = sender && sender.kind === 'user' ? sender.id : null;
+
+  const filteredSenders = useMemo(() => {
+    const needle = senderQuery.trim().toLowerCase();
+    if (!needle) return senders;
+    return senders.filter(
+      (s) =>
+        s.name.toLowerCase().includes(needle) ||
+        (s.handle || '').toLowerCase().includes(needle)
+    );
+  }, [senders, senderQuery]);
+
+  const avatarUrlFor = useCallback(
+    (id: string) => {
+      const ts = avatarIdx.ok?.[id];
+      return ts ? buildUserAvatarUrl(username, id, ts) : undefined;
+    },
+    [avatarIdx, username]
+  );
 
   const visibleResults = results.slice(0, shown);
   const remaining = results.length - shown;
@@ -387,14 +477,123 @@ export function SearchPanel({ username, meta, onClose, onJumpTo }: SearchPanelPr
         {showFilters && (
           <div className="max-h-[45%] shrink-0 overflow-y-auto overscroll-contain px-3 pb-2.5 pt-1.5">
             <div className="space-y-2">
-              <Input
-                value={sender}
-                onChange={(e) => setSender(e.target.value)}
-                placeholder="发送者"
-                aria-label="按发送者筛选"
-                autoComplete="off"
-                className="min-w-0"
-              />
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setShowSenders((v) => !v)}
+                  aria-expanded={showSenders}
+                  aria-label="按发送者筛选"
+                  className="flex h-11 w-full min-w-0 items-center justify-between gap-2 rounded-ios-field bg-secondary px-3 text-left text-ios-body focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <span className={`min-w-0 truncate ${sender ? 'text-foreground' : 'text-muted-foreground'}`}>
+                    {senderLabel}
+                  </span>
+                  <ChevronDown
+                    size={16}
+                    aria-hidden="true"
+                    className={`shrink-0 text-muted-foreground transition-transform ${
+                      showSenders ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
+
+                {showSenders && (
+                  <div className="mt-2 overflow-hidden rounded-ios-field border border-separator">
+                    <div className="border-b border-separator p-2">
+                      <Input
+                        value={senderQuery}
+                        onChange={(e) => setSenderQuery(e.target.value)}
+                        placeholder="搜索发送者"
+                        aria-label="搜索发送者"
+                        autoComplete="off"
+                        autoCorrect="off"
+                        spellCheck={false}
+                        className="min-w-0"
+                      />
+                    </div>
+
+                    <div className="max-h-[216px] overflow-y-auto overscroll-contain">
+                      {sender && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSender(null);
+                            setSenderQuery('');
+                            setShowSenders(false);
+                          }}
+                          className="flex w-full items-center border-b border-separator px-3 py-2.5 text-left text-ios-body text-primary transition-colors active:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                        >
+                          清除选择
+                        </button>
+                      )}
+
+                      {filteredSenders.map((entry) => {
+                        const isSelected = selectedSenderId === entry.id;
+                        return (
+                          <button
+                            key={entry.id}
+                            type="button"
+                            aria-pressed={isSelected}
+                            onClick={() => {
+                              setSender(
+                                isSelected ? null : { kind: 'user', id: entry.id, label: entry.name }
+                              );
+                              setSenderQuery('');
+                              setShowSenders(false);
+                            }}
+                            className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors active:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                          >
+                            <Avatar
+                              src={avatarUrlFor(entry.id)}
+                              name={entry.name}
+                              seed={entry.id}
+                              size={28}
+                            />
+                            <span
+                              className={`min-w-0 flex-1 truncate text-ios-body ${
+                                isSelected ? 'font-semibold text-primary' : ''
+                              }`}
+                            >
+                              {entry.name}
+                            </span>
+                            {entry.handle && entry.handle !== entry.name && (
+                              <span className="shrink-0 text-ios-caption1 text-muted-foreground">
+                                @{entry.handle}
+                              </span>
+                            )}
+                            {isSelected && (
+                              <Check size={16} className="shrink-0 text-primary" aria-hidden="true" />
+                            )}
+                          </button>
+                        );
+                      })}
+
+                      {/* Fallback for senders users.json does not know about —
+                          members who only ever appear as a bare name on a message. */}
+                      {senderQuery.trim() !== '' && filteredSenders.length === 0 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSender({ kind: 'text', text: senderQuery.trim() });
+                            setSenderQuery('');
+                            setShowSenders(false);
+                          }}
+                          className="flex w-full items-center px-3 py-3 text-left text-ios-body text-primary transition-colors active:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                        >
+                          按文字「{senderQuery.trim()}」筛选
+                        </button>
+                      )}
+
+                      {senders.length === 0 && (
+                        <p className="px-3 py-3 text-ios-footnote text-muted-foreground">
+                          没有可选择的成员
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div className="flex flex-col gap-2 md:flex-row">
                 <Input
                   type="date"

@@ -78,6 +78,8 @@ export interface Message {
 }
 
 export interface UserProfile {
+  /** Display name, as the sender picker and message rows show it. */
+  n?: string;
   un?: string;
   b?: string;
   bot?: boolean;
