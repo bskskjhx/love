@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { count, dayKey, dayLabel, duration, fileSize, fullDate, parts, relative, setTimeZone, shortDate, timeOf } from '../lib/format'
 
-// 2024-03-05 12:34:56 UTC（周二）
 const T = Date.UTC(2024, 2, 5, 12, 34, 56) / 1000
 
 describe('format: 时区与日期', () => {
@@ -23,7 +22,6 @@ describe('format: 时区与日期', () => {
 
   it('切换时区、夏令时', () => {
     setTimeZone('America/New_York')
-    // 2024-03-10 夏令时开始（02:00 → 03:00）
     expect(timeOf(Date.UTC(2024, 2, 10, 6, 59) / 1000)).toBe('01:59')
     expect(timeOf(Date.UTC(2024, 2, 10, 7, 0) / 1000)).toBe('03:00')
     expect(dayKey(Date.UTC(2024, 2, 10, 3, 0) / 1000)).toBe('2024-03-09')

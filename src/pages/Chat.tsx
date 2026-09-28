@@ -57,13 +57,11 @@ export function ChatPage({ chatKey, msgId, pushed, topic, all }: { chatKey: stri
 function visibleMessages(loaded: Loaded[], topicOf: ((m: Message, get: (id: number) => Message | undefined) => number | undefined) | null, topic?: number): Message[] {
   const all = loaded.flatMap((c) => c.msgs)
   if (!topicOf) return all
-  // 话题视图：只显示本话题的消息（话题创建本身不显示）
   const byId = new Map(all.map((m) => [m.id, m]))
   return all.filter((m) => m.svc?.type !== 'topic_create' && topicOf(m, (id) => byId.get(id)) === topic)
 }
 
 function ChatView({ chatKey, meta, users: rawUsers, msgId, pushed, topic }: { chatKey: string; meta: ChatMeta; users: Users; msgId?: number; pushed?: boolean; topic?: number }) {
-  // 话题视图单独记录位置
   const posKey = topic ? `${meta.id}#${topic}` : String(meta.id)
   useDocumentTitle(meta.title)
   const users = useMemo(() => withChat(rawUsers, meta), [rawUsers, meta])
@@ -72,13 +70,11 @@ function ChatView({ chatKey, meta, users: rawUsers, msgId, pushed, topic }: { ch
   const header = useRef<HTMLDivElement>(null)
   const safeBottom = useRef<HTMLDivElement>(null)
   const list = useRef<ListHandle>(null)
-  // 打开时记下的已读位置：其后的消息为“新消息”，列表中插入分隔条
   const [unreadFrom] = useState(() => {
     if (topic) return null
     const r = getRead(meta.id)
     return r && meta.lastId && r.id < meta.lastId ? r.id : null
   })
-  // 只在挂载时决定一次：点进指定消息时必须定位到它，即使上次停留时的路由恰好相同
   const [boot] = useState(() => {
     const jumping = !!pushed && msgId != null
     const stored = jumping ? undefined : positions.get(posKey)
@@ -86,7 +82,6 @@ function ChatView({ chatKey, meta, users: rawUsers, msgId, pushed, topic }: { ch
     if (stored && stored.route === msgId) {
       target = stored.bottom || stored.id == null ? { kind: 'bottom' } : { kind: 'msg', id: stored.id, align: 'offset', offset: stored.offset ?? 0 }
     }
-    // 同官方：上次停在底部、之后又有新消息时，从第一条未读开始看
     if (!msgId && unreadFrom != null && (!stored || stored.bottom || stored.route !== msgId)) {
       target = { kind: 'msg', id: unreadFrom + 1, align: 'start', unread: true }
     }
@@ -109,7 +104,6 @@ function ChatView({ chatKey, meta, users: rawUsers, msgId, pushed, topic }: { ch
   const [profile, setProfile] = useState<number | null>(null)
   const [thread, setThread] = useState<number | null>(null)
   const [topDay, setTopDay] = useState<string | null>(null)
-  // 多选模式（同官方“选择”）：存所选消息所在条目的 key
   const [selected, setSelected] = useState<Set<number> | null>(null)
   const selecting = selected != null
   const selectingRef = useRef(false)
@@ -145,11 +139,9 @@ function ChatView({ chatKey, meta, users: rawUsers, msgId, pushed, topic }: { ch
   const hi = loaded[loaded.length - 1]?.n ?? 0
   const atBottom = bottomState && hi === lastN
 
-  // 置顶横幅的高度只作用于本页（多个聊天页同时保活，不能写到全局）
   const pageRoot = useRef<HTMLDivElement>(null)
   const [pinnedShown, setPinnedShown] = useState(false)
 
-  // 导航栏、迷你播放条和置顶条浮在内容上，定位消息时一并让开
   const clearance = useCallback((): Clearance => {
     const root = getComputedStyle(pageRoot.current ?? document.documentElement)
     const extra = (parseFloat(root.getPropertyValue('--player-h')) || 0) + (parseFloat(root.getPropertyValue('--pinned-h')) || 0)
@@ -215,7 +207,6 @@ function ChatView({ chatKey, meta, users: rawUsers, msgId, pushed, topic }: { ch
           if (!topicOf || visibleMessages(merged, topicOf, topic).length > before) break
         }
         if (!added.length) return
-        // 在帧开始时同步提交（见 MessageList 说明），滚动中插入新块也不会跳
         await new Promise<void>((r) => requestAnimationFrame(() => {
           if (g === generation.current)
             flushSync(() =>
@@ -256,7 +247,6 @@ function ChatView({ chatKey, meta, users: rawUsers, msgId, pushed, topic }: { ch
     [openAt, flash],
   )
 
-  /** 跳转并把位置写进地址栏，方便分享 */
   const go = useCallback(
     (id: number) => {
       lastJump.current = id
@@ -266,11 +256,9 @@ function ChatView({ chatKey, meta, users: rawUsers, msgId, pushed, topic }: { ch
     [chatKey, jumpTo],
   )
 
-  // 从回复/置顶跳转后记下来源消息，右下角按钮可逐级返回
   const [returnStack, setReturnStack] = useState<number[]>([])
   const returnRef = useRef(returnStack)
   returnRef.current = returnStack
-  // 当前返回点的来源消息是否已经离开过视口；离开后再回到视口才算“自己滚回来了”
   const sourceAway = useRef(false)
   useEffect(() => {
     sourceAway.current = false
@@ -278,7 +266,6 @@ function ChatView({ chatKey, meta, users: rawUsers, msgId, pushed, topic }: { ch
 
   const jumpFrom = useCallback(
     async (id: number, source?: number) => {
-      // 先确认原消息在存档里，避免跳到不相干的位置
       try {
         const msgs = await getChunk(meta.id, chunkFor(chunks, id))
         if (!msgs.some((m) => m.id === id)) {
@@ -286,7 +273,6 @@ function ChatView({ chatKey, meta, users: rawUsers, msgId, pushed, topic }: { ch
           return
         }
       } catch {
-        /* 加载失败时交给 go 处理并显示错误 */
       }
       if (source != null && source !== id) setReturnStack((s) => (s.at(-1) === source ? s : [...s.slice(-19), source]))
       go(id)
@@ -298,7 +284,6 @@ function ChatView({ chatKey, meta, users: rawUsers, msgId, pushed, topic }: { ch
   const navRef = useRef(nav)
   navRef.current = nav
   const backTo = returnStack.at(-1)
-  // 自己滚到了最新消息：所有返回点都在更早的位置，全部作废（只在“到达底部”的那一刻清空，跳走时不受影响）
   useEffect(() => {
     if (atBottom) setReturnStack((st) => (st.length ? [] : st))
   }, [atBottom])
@@ -308,7 +293,6 @@ function ChatView({ chatKey, meta, users: rawUsers, msgId, pushed, topic }: { ch
     go(backTo)
   }
 
-  // 地址栏中的消息 id 变化（例如从搜索结果返回后点击另一条）
   useEffect(() => {
     if (msgId && msgId !== lastJump.current) {
       lastJump.current = msgId
@@ -351,11 +335,9 @@ function ChatView({ chatKey, meta, users: rawUsers, msgId, pushed, topic }: { ch
     noteScroll()
     window.clearTimeout(persistTimer.current)
     persistTimer.current = window.setTimeout(persistPos, 250)
-    // 日期浮标不必每帧更新
     if (dayTimer.current) return
     dayTimer.current = window.setTimeout(() => {
       dayTimer.current = 0
-      // 同官方：自己滚回到跳转前的那条消息，这个返回点就用掉了
       const src = returnRef.current.at(-1)
       const k = src != null ? live.current.anchors.get(src) : undefined
       if (k != null) {
@@ -393,14 +375,12 @@ function ChatView({ chatKey, meta, users: rawUsers, msgId, pushed, topic }: { ch
     else void openAt({ kind: 'bottom' })
   }
 
-  // 看图
   const photos: LightboxItem[] = useMemo(
     () => messages.filter((m) => m.media?.type === 'photo' && m.media.file).map((m) => ({ msg: m, name: userName(users, m.from) })),
     [messages, users],
   )
   const onOpenPhoto = useCallback((id: number) => setViewer(photos.findIndex((p) => p.msg.id === id)), [photos])
 
-  // 处理函数经 ref 转发，保持引用稳定，列表增删消息时已渲染的气泡不必重渲染
   const fns = useRef({ jumpFrom, onOpenPhoto })
   fns.current = { jumpFrom, onOpenPhoto }
   const handlers: ItemHandlers = useMemo(
@@ -408,7 +388,6 @@ function ChatView({ chatKey, meta, users: rawUsers, msgId, pushed, topic }: { ch
       onJump: (id: number, source?: number) => void fns.current.jumpFrom(id, source),
       onOpenPhoto: (id: number) => fns.current.onOpenPhoto(id),
       onHashtag: (tag: string) => navigate(paths.search(chatKey, tag)),
-      // 多选时长按也只是勾选
       onContext: (msg: Message, el: HTMLElement) => (selectingRef.current ? undefined : setMenu({ msg, el })),
       onProfile: setProfile,
       onReplies: setThread,
@@ -419,7 +398,6 @@ function ChatView({ chatKey, meta, users: rawUsers, msgId, pushed, topic }: { ch
   const closeMenu = useCallback(() => setMenu(null), [])
   const setSelection = (next: Set<number> | null) => setSelected(next)
 
-  /** 多选复制/分享的文字，格式同官方：名字, [日期 时间] + 内容，按时间排序 */
   const selectionText = () => {
     if (!selected) return ''
     const byKey = new Map<number, Message[]>()

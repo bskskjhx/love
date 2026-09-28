@@ -11,17 +11,11 @@ interface SheetProps {
   onClose: () => void
   children: ReactNode
   title?: ReactNode
-  /** 右上角按钮，默认是圆形关闭按钮 */
   right?: ReactNode
 }
 
-/**
- * iOS 27 风格的悬浮玻璃面板（vaul Drawer，基于 Radix Dialog）：按住面板任意处下拉关闭（按速度与距离判断、
- * 内容滚动到顶后才开始拖动）、进出场动画、焦点锁定与归还、Esc 关闭、背景不可滚动都由 vaul / Radix 负责。
- */
 export function Sheet({ open, onClose, children, title, right }: SheetProps) {
   useCloseWhenInactive(open, onClose)
-  // 关闭动画期间父组件可能已清空内容（如 ProfileSheet 的 id 变成 null），沿用打开时最后一次的内容
   const kept = useRef({ children, title, right })
   if (open) kept.current = { children, title, right }
   const view = kept.current

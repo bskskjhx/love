@@ -19,7 +19,6 @@ function sameSender(a: Message | undefined, b: Message | undefined): boolean {
   return !!a && !!b && !a.svc && !b.svc && a.from === b.from && Math.abs(b.date - a.date) < GROUP_GAP && !a.fwd === !b.fwd
 }
 
-/** 按天分组；同一相册（图片/视频）合并，成组发送的文件、音乐逐条显示；相邻同一发送者的消息标记首尾以控制头像和名字 */
 export function groupMessages(msgs: Message[]): Day[] {
   const days: Day[] = []
   let day: Day | undefined
@@ -62,7 +61,6 @@ export function groupMessages(msgs: Message[]): Day[] {
   return days
 }
 
-/** 消息 id → 渲染该消息的元素 id（相册成员指向相册首条） */
 export function anchorIds(days: Day[]): Map<number, number> {
   const map = new Map<number, number>()
   for (const d of days)

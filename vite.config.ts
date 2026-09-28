@@ -24,7 +24,6 @@ const MIME: Record<string, string> = {
   '.pdf': 'application/pdf',
 }
 
-/** 开发时把存档目录挂载到 /data/，构建时复制到 dist/data/ */
 function archiveData(dir: string): Plugin {
   let outDir = 'dist'
   let base = '/'
@@ -60,13 +59,6 @@ function archiveData(dir: string): Plugin {
   }
 }
 
-/**
- * 离线缓存（vite-plugin-pwa / Workbox）：
- *  - 应用外壳（带 hash 的构建产物、图标、index.html）预缓存，有新版本时自动激活并刷新
- *  - 存档 JSON：网络优先，离线时用缓存
- *  - 头像、媒体：缓存优先，最多 600 个；音视频的 Range 请求交给浏览器
- *  - 运行时缓存沿用旧版手写 service worker 的缓存名，已缓存的内容继续可用
- */
 const pwa = (base: string) =>
   VitePWA({
     registerType: 'autoUpdate',
@@ -79,7 +71,6 @@ const pwa = (base: string) =>
       cleanupOutdatedCaches: true,
       runtimeCaching: [
         {
-          // 匹配函数会被原样写进 sw.js，不能引用外部变量
           urlPattern: ({ url, sameOrigin }) => sameOrigin && url.pathname.includes('/data/') && url.pathname.endsWith('.json'),
           handler: 'NetworkFirst',
           options: { cacheName: 'data-v2' },
@@ -100,6 +91,5 @@ const pwa = (base: string) =>
 export default defineConfig(({ mode }) => ({
   base: process.env.BASE_PATH || '/',
   plugins: [react(), tailwindcss(), archiveData(path.resolve(mode === 'demo' ? '.demo-data' : process.env.DATA_DIR || 'data')), pwa(process.env.BASE_PATH || '/')],
-  // 统计页的图表库（ECharts）单独成块、按需加载，约 680 kB（gzip 230 kB）
   build: { target: 'es2022', chunkSizeWarningLimit: 800 },
 }))

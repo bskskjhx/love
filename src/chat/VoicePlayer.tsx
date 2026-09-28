@@ -7,7 +7,6 @@ import type { Media, Message } from '../lib/types'
 
 const BARS = 40
 
-/** 没有抓到波形的旧存档：按消息 id 生成稳定的伪波形 */
 function pseudoWave(id: number): number[] {
   let x = id * 2654435761
   return Array.from({ length: BARS }, (_, i) => {
@@ -35,7 +34,6 @@ function Bars({ wave }: { wave: number[] }) {
 
 const fmt = (s: number) => duration(Math.max(0, Math.round(s))) || '0:00'
 
-/** 语音/音频气泡（同官方）：播放键、可拖动跳转的波形或进度条、时长、倍速 */
 export const VoicePlayer = memo(function VoicePlayer({ msg, media, chatId, chatKey, name }: { msg: Message; media: Media; chatId: number; chatKey: string; name: string }) {
   const st = usePlayerFor(chatId, msg.id)
   const current = st.track != null
@@ -45,7 +43,6 @@ export const VoicePlayer = memo(function VoicePlayer({ msg, media, chatId, chatK
   const voice = media.type === 'voice'
   const wave = voice ? resample(media.wave?.length ? media.wave : pseudoWave(msg.id)) : null
 
-  // 进度条（Radix Slider）：拖动、点按、方向键都能跳转；不让事件冒泡到气泡（避免触发长按菜单等）
   const progress = (className: string, children: ReactNode) => (
     <Slider.Root
       value={[Math.round(frac * 1000)]}

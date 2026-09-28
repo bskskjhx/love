@@ -12,7 +12,6 @@ import { TitleBadge } from './MessageItem'
 import { AtSign, ChartColumn, Hash, Images, Info, MessageSquareText, Send } from 'lucide-react'
 import { ActionTile, Card, IconBadge, Row } from '../components/List'
 
-/** 简介里的链接和 @用户名 可点击 */
 function Linkified({ text }: { text: string }) {
   const parts = text.split(/(https?:\/\/[^\s]+|@[A-Za-z0-9_]{4,32})/g)
   return (
@@ -30,7 +29,6 @@ function Linkified({ text }: { text: string }) {
   )
 }
 
-/** 资料卡里“查看 TA 的消息 / 发言趋势 / 媒体”：先关闭资料卡，再进入对应页面 */
 export function profileLinks(chatKey: string, close: () => void) {
   return {
     onSearch: (id: number) => {
@@ -48,7 +46,6 @@ export function profileLinks(chatKey: string, close: () => void) {
   }
 }
 
-/** 点击头像/名字弹出的个人资料 */
 export function ProfileSheet({
   id,
   users,
@@ -65,9 +62,7 @@ export function ProfileSheet({
   onClose: () => void
   onSearch: (id: number) => void
   onChatInfo: () => void
-  /** 查看此人发过的媒体、文件、链接（共享媒体页） */
   onMedia?: (id: number) => void
-  /** 此人的发言趋势（统计页） */
   onStats?: (id: number) => void
 }) {
   const u = id != null ? users[String(id)] : undefined

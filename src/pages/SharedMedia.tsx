@@ -15,7 +15,6 @@ import { userName } from '../lib/text'
 import type { ChatMeta, Message, Users } from '../lib/types'
 import { useChat } from '../lib/useChat'
 
-/** 共享媒体分类（同官方：媒体 / 文件 / 链接 / 语音 / GIF） */
 const TABS: { key: string; label: string; test: (m: Message) => boolean }[] = [
   { key: 'media', label: '媒体', test: (m) => m.media?.type === 'photo' || m.media?.type === 'video' },
   { key: 'file', label: '文件', test: (m) => m.media?.type === 'file' || m.media?.type === 'audio' },
@@ -24,7 +23,6 @@ const TABS: { key: string; label: string; test: (m: Message) => boolean }[] = [
   { key: 'gif', label: 'GIF', test: (m) => m.media?.type === 'gif' },
 ]
 
-/** 消息里的第一个链接：网页预览优先，其次文字里的链接 */
 function linkOf(m: Message): { url: string; title?: string; site?: string } | null {
   if (m.media?.type === 'webpage' && m.media.url) return { url: m.media.url, title: m.media.title, site: m.media.site }
   for (const e of m.ents ?? []) {
@@ -52,7 +50,6 @@ const monthOf = (ts: number) => {
   return `${d.getFullYear()}年${d.getMonth() + 1}月`
 }
 
-// 扫描结果按条件缓存，切换分类、返回页面都不必重扫
 const results = new Map<string, { list: Message[]; done: boolean }>()
 const PAGE = 45
 
@@ -86,7 +83,6 @@ function useShared(meta: ChatMeta | undefined, tab: string, from?: number) {
       alive = false
     }
   }, [meta, key, tab, from])
-  // 切换分类的那一帧旧结果还在：不渲染，避免拿别的分类的消息去画
   return state.key === key ? state : { key, list: [] as Message[], done: false }
 }
 
@@ -110,7 +106,6 @@ export function SharedMediaPage({ chatKey, type, from }: { chatKey: string; type
 
   const idx = TABS.findIndex((t) => t.key === tab)
   const items = list.slice(0, shown)
-  // 按月分组
   const groups: { month: string; items: Message[] }[] = []
   for (const m of items) {
     const month = monthOf(m.date)

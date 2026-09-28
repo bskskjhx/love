@@ -102,7 +102,7 @@ describe('replies / searchNav / topics', () => {
 
 describe('stats 聚合', () => {
   const t = (days: [number, number][], total = 0): Tally => ({ total, days: new Map(days) } as unknown as Tally)
-  const d0 = dayNum(2024, 1, 29) // 周一
+  const d0 = dayNum(2024, 1, 29)
   it('buckets / bucketLabel', () => {
     expect(buckets(d0, d0 + 2, 'day')).toEqual([d0, d0 + 1, d0 + 2])
     expect(buckets(d0 + 3, d0 + 10, 'week')).toEqual([d0, d0 + 7])

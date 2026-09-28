@@ -10,14 +10,11 @@ import { Album, MEDIA_MAX_W, MediaBody, Photo, WebPage, fitBox, isBare, isVisual
 import { RichText } from './RichText'
 
 export interface ItemHandlers {
-  /** 跳转到消息；source 为发起跳转的消息，用于返回 */
   onJump: (id: number, source?: number) => void
   onOpenPhoto: (id: number) => void
   onHashtag: (tag: string) => void
   onContext: (msg: Message, el: HTMLElement) => void
-  /** 点击头像或名字查看个人资料 */
   onProfile: (id: number) => void
-  /** 打开某条消息的回复串 */
   onReplies?: (id: number) => void
 }
 
@@ -26,7 +23,6 @@ interface Props extends ItemHandlers {
   chatId: number
   users: Users
   highlighted: boolean
-  /** 回复数（含相册内各条） */
   replies?: number
 }
 
@@ -40,7 +36,6 @@ const PEER_BORDER = 'border-[var(--pc-light)] dark:border-[var(--pc-dark)]'
 const segmenter = typeof Intl !== 'undefined' && 'Segmenter' in Intl ? new Intl.Segmenter() : null
 const EMOJI_RE = /\p{Extended_Pictographic}|\p{Regional_Indicator}/u
 
-/** 只有 1–3 个表情的消息像官方一样放大显示、不带气泡；返回表情个数，否则 0 */
 function jumboCount(m: Message): number {
   const text = m.text?.trim()
   if (!text || text.length > 40 || !segmenter || m.media || m.reply || m.fwd || m.ents?.length) return 0
@@ -72,7 +67,6 @@ function MetaInfo({ m, overlay, hideSig }: { m: Message; overlay?: boolean; hide
   )
 }
 
-/** 名字右侧的头衔胶囊（与新版 Telegram 一致） */
 export function TitleBadge({ text, owner, className = 'ml-auto' }: SenderTitle & { className?: string }) {
   const color = owner
     ? 'bg-[#a86bdc]/14 text-[#a064d6] dark:bg-[#bf5af2]/20 dark:text-[#d9a3f5]'
@@ -104,7 +98,6 @@ function ReplyQuote({ m, users, onJump }: { m: Message; users: Users; onJump: It
   )
 }
 
-/** “N 条回复”（同官方回复/评论入口），点按打开回复串 */
 function RepliesLink({ n, m, onReplies, hideSig }: { n?: number; m: Message; onReplies?: (id: number) => void; hideSig?: boolean }) {
   if (!n || !onReplies) return null
   const id = m.id
@@ -122,7 +115,6 @@ function RepliesLink({ n, m, onReplies, hideSig }: { n?: number; m: Message; onR
         <Comment size={15} />
         {n} 条回复
       </button>
-      {/* 给右下角的时间让出位置 */}
       <span className="invisible ml-3 text-[11px] leading-none" aria-hidden>
         <MetaInfo m={m} hideSig={hideSig} />
       </span>
@@ -161,7 +153,6 @@ const ServiceItem = memo(function ServiceItem({ m, users, onJump, highlighted }:
   )
 })
 
-/** 每次分组都会生成新的 item 对象，按内容比较，避免加载更多时整列表重渲染 */
 function sameItem(a: Item, b: Item): boolean {
   if (a === b) return true
   if (a.kind === 'svc' || b.kind === 'svc') return a.kind === 'svc' && b.kind === 'svc' && a.msg === b.msg
@@ -192,7 +183,6 @@ export const MessageItem = memo(
 function Bubble({ item, users, chatId, highlighted, replies, onJump, onOpenPhoto, onHashtag, onContext, onProfile, onReplies }: Props & { item: Extract<Item, { kind: 'msg' }> }) {
   const { msgs, first, last } = item
   const m = msgs[0]
-  // 相册的文字可能在任意一条上
   const textMsg = msgs.find((x) => x.text) ?? m
   const user = m.from != null ? users[String(m.from)] : undefined
   const name = m.from != null ? userName(users, m.from) : ''
@@ -246,8 +236,6 @@ function Bubble({ item, users, chatId, highlighted, replies, onJump, onOpenPhoto
   const text = hasText && (
     <div className="bubble-text flow-root">
       <RichText text={textMsg.text!} ents={textMsg.ents} onHashtag={onHashtag} />
-      {/* 给右下角时间占位：用右浮动而不是行内块。末行放得下时和文字同行；放不下时只另起一个时间高度，
-          而不是一整行文字的行高，气泡底部不会空出一大块 */}
       <span className="invisible float-right mt-1 ml-2 text-[11px] leading-none" aria-hidden>
         <MetaInfo m={textMsg} hideSig={anon} />
       </span>

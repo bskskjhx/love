@@ -2,7 +2,6 @@ import { getChunk } from './api'
 import { yieldToMain } from './idle'
 import type { ChatMeta, Message } from './types'
 
-/** 按消息类型分类（搜索筛选、共享媒体共用） */
 export const MEDIA_KINDS: { key: string; label: string; test: (m: Message) => boolean }[] = [
   { key: 'photo', label: '图片', test: (m) => m.media?.type === 'photo' },
   { key: 'video', label: '视频', test: (m) => ['video', 'gif', 'round'].includes(m.media?.type ?? '') },
@@ -11,7 +10,6 @@ export const MEDIA_KINDS: { key: string; label: string; test: (m: Message) => bo
   { key: 'voice', label: '语音', test: (m) => m.media?.type === 'voice' },
 ]
 
-/** 忽略大小写和全角/半角差异 */
 export const norm = (s: string) => s.normalize('NFKC').toLowerCase()
 
 function haystack(m: Message): string {
@@ -21,7 +19,6 @@ function haystack(m: Message): string {
   return parts.filter(Boolean).join('\n')
 }
 
-/** 每条消息的检索文本（原文与归一化后）按消息对象缓存，再次搜索不必重新拼接和 NFKC 归一化 */
 const hayCache = new WeakMap<Message, [string, string]>()
 export function hayOf(m: Message): [string, string] {
   let h = hayCache.get(m)
@@ -34,12 +31,10 @@ export function hayOf(m: Message): [string, string] {
 }
 
 const PARALLEL = 4
-/** 每处理这么多条让出一次主线程，扫描再久也不卡输入、滚动和动画 */
 const YIELD_EVERY = 100
 
 export async function* scanBatches(meta: ChatMeta, opts: { oldestFirst?: boolean } = {}): AsyncGenerator<{ msgs: Message[]; progress: number }> {
   const order = opts.oldestFirst ? meta.chunks : [...meta.chunks].reverse()
-  // 先让首帧和转场画出来
   await yieldToMain()
   for (let i = 0; i < order.length; i += PARALLEL) {
     const batch = await Promise.all(order.slice(i, i + PARALLEL).map((c) => getChunk(meta.id, c.n)))
@@ -50,11 +45,6 @@ export async function* scanBatches(meta: ChatMeta, opts: { oldestFirst?: boolean
   }
 }
 
-/**
- * 从新到旧逐块扫描整个群的消息。visit 返回 false 时停止。
- * onProgress 在每块处理完后调用；alive 返回 false 时中止（组件卸载、条件变化）。
- * 返回是否扫描到了末尾（未被中止）。
- */
 export async function scanChat(
   meta: ChatMeta,
   visit: (m: Message) => boolean | void,

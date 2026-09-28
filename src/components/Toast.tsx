@@ -8,7 +8,6 @@ export function toast(msg: string) {
   push?.(msg)
 }
 
-/** 顶部浮出的轻提示（Radix Toast：自动消失、上滑关闭、读屏播报；新提示直接替换旧提示） */
 export function ToastHost() {
   const [items, setItems] = useState<{ id: number; text: string }[]>([])
   useEffect(() => {

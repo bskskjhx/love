@@ -8,12 +8,10 @@ import type { ChatMeta, Message, Users } from '../lib/types'
 import type { ItemHandlers } from './MessageItem'
 import { PinnedView } from './PinnedView'
 
-/** 旧存档没有 meta.pins：空闲时从“置顶了消息”的服务消息推算（新 → 旧，去重） */
 const derived = new Map<number, number[]>()
 
 function usePins(meta: ChatMeta): number[] {
   const [all, setPins] = useState<number[]>(() => meta.pins ?? derived.get(meta.id) ?? [])
-  // meta.pins 是频道当前的置顶（抓取时从 Telegram 取），可能比存档新：只留存档范围内的
   const pins = useMemo(() => all.filter((id) => (meta.firstId == null || id >= meta.firstId) && (meta.lastId == null || id <= meta.lastId)), [all, meta.firstId, meta.lastId])
   useEffect(() => {
     if (meta.pins || derived.has(meta.id)) return
@@ -41,12 +39,10 @@ function usePins(meta: ChatMeta): number[] {
   return pins
 }
 
-/** 加载这几条置顶；存档里找不到的（已删除）记为 null */
 function usePinnedMessages(meta: ChatMeta, ids: number[]): Map<number, Message | null> {
   const [map, setMap] = useState(() => new Map<number, Message | null>())
   useEffect(() => {
     let alive = true
-    // 置顶消息可能分散在别的块里：转场结束后再加载，不和打开聊天抢主线程
     const cancel = afterTransition(
       () =>
         void Promise.all(ids.map((id) => getMessage(meta.id, meta.chunks, id).catch(() => undefined))).then((list) => {
@@ -66,10 +62,6 @@ function usePinnedMessages(meta: ChatMeta, ids: number[]): Map<number, Message |
   return map
 }
 
-/**
- * 置顶消息横幅（同官方）：导航栏下方，点按跳到当前这条并轮到下一条（更早的）置顶；
- * 左侧分段指示当前是第几条，右侧按钮打开全部置顶列表。
- */
 export function PinnedBar({
   meta,
   users,
@@ -81,11 +73,9 @@ export function PinnedBar({
   users: Users
   handlers: ItemHandlers
   onJump: (id: number) => void
-  /** 横幅显示与否，聊天页据此给内容和日期胶囊让位 */
   onShown: (shown: boolean) => void
 }) {
   const inRange = usePins(meta)
-  // 范围内但存档里没有的（被删除的）置顶，加载后发现就去掉
   const [gone, setGone] = useState<ReadonlySet<number>>(() => new Set())
   const pins = useMemo(() => (gone.size ? inRange.filter((id) => !gone.has(id)) : inRange), [inRange, gone])
   const [i, setI] = useState(0)
@@ -107,7 +97,6 @@ export function PinnedBar({
   const m = msgs.get(id)
   const n = pins.length
   const seg = Math.min(n, 4)
-  // 指示条：最多 4 段，超过时窗口跟随当前位置
   const segStart = Math.min(Math.max(0, idx - 1), n - seg)
   return (
     <>

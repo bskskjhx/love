@@ -15,7 +15,6 @@ interface Ctx {
   highlight?: string
 }
 
-/** 按 Telegram 实体（UTF-16 偏移，与 JS 字符串一致）渲染富文本，支持嵌套 */
 export const RichText = memo(function RichText({ text, ents, onHashtag, highlight }: { text: string; ents?: Entity[] } & Ctx) {
   const nodes: Node[] = (ents ?? [])
     .map((e) => ({ e, start: e[1], end: e[1] + e[2] }))
@@ -97,7 +96,6 @@ function Spoiler({ children }: { children: ReactNode }) {
   )
 }
 
-/** 行内代码：同官方，点一下就复制 */
 function InlineCode({ raw, children }: { raw: string; children: ReactNode }) {
   return (
     <code
@@ -116,7 +114,6 @@ function InlineCode({ raw, children }: { raw: string; children: ReactNode }) {
   )
 }
 
-/** 代码块：语言标签 + 复制按钮 + 轻量着色 */
 function CodeBlock({ raw, lang }: { raw: string; lang?: string }) {
   const html = useHighlight(raw, lang)
   return (
@@ -144,7 +141,6 @@ function CodeBlock({ raw, lang }: { raw: string; lang?: string }) {
   )
 }
 
-/** 引用：发送者选择折叠（或特别长）时默认收起，点按展开/收起，同官方 */
 function Quote({ collapsed, children }: { collapsed: boolean; children: ReactNode }) {
   const [open, setOpen] = useState(!collapsed)
   const foldable = collapsed

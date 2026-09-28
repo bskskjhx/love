@@ -9,7 +9,6 @@ import { useIsDark } from '../lib/theme'
 
 echarts.use([BarChart, LineChart, HeatmapChart, PieChart, GridComponent, TooltipComponent, DataZoomComponent, LegendComponent, VisualMapComponent, MarkPointComponent, CanvasRenderer])
 
-/** 与页面一致的配色（iOS 系统色），深浅色各一套 */
 export function palette(dark: boolean) {
   return dark
     ? { accent: '#0a84ff', second: '#ff9f0a', third: '#30d158', label: '#ffffff', label2: 'rgba(235,235,245,0.6)', sep: 'rgba(84,84,88,0.6)', grid: 'rgba(84,84,88,0.35)', cell: '#1c1c1e', heat: ['#2c2c2e', '#0a3d73', '#0a84ff', '#64d2ff'], kinds: ['#0a84ff', '#30d158', '#ff9f0a', '#bf5af2', '#ff375f', '#64d2ff', '#ffd60a', '#ac8e68', '#98989d'] }
@@ -17,7 +16,6 @@ export function palette(dark: boolean) {
 }
 export type Palette = ReturnType<typeof palette>
 
-/** 各图共用的基础样式：字体、提示框、坐标轴颜色 */
 function base(p: Palette): EChartsOption {
   return {
     textStyle: { fontFamily: 'inherit', color: p.label2, fontSize: 11 },

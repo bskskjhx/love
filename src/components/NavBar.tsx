@@ -5,10 +5,8 @@ import { ChevronLeft } from './Icons'
 interface Props {
   title?: ReactNode
   subtitle?: ReactNode
-  /** 标题左侧的头像等；有它时标题放进玻璃胶囊（类似 iOS 信息 App） */
   titleIcon?: ReactNode
   capsule?: boolean
-  /** 标题是否显示（大标题页面滚动后才显示） */
   titleVisible?: boolean
   back?: { label?: string; onClick: () => void }
   left?: ReactNode
@@ -19,7 +17,6 @@ interface Props {
   scrolled?: boolean
 }
 
-/** iOS 27 风格导航栏：悬浮的玻璃按钮 + 顶部滚动边缘模糊 */
 export function NavBar({ title, subtitle, titleIcon, capsule, titleVisible = true, back, left, right, onTitleClick, bottom, transparentUntilScroll, scrolled }: Props) {
   const solid = !transparentUntilScroll || scrolled
   return (
@@ -62,7 +59,6 @@ export function NavBar({ title, subtitle, titleIcon, capsule, titleVisible = tru
   )
 }
 
-/** 放在导航栏右侧玻璃胶囊（Radix Toolbar，方向键在按钮间移动）里的图标按钮 */
 export function NavButton({ children, onClick, label }: { children: ReactNode; onClick: () => void; label: string }) {
   return (
     <Toolbar.Button onClick={onClick} title={label} data-press className="glass-press flex h-11 w-10 items-center justify-center rounded-full text-label">
@@ -71,7 +67,6 @@ export function NavButton({ children, onClick, label }: { children: ReactNode; o
   )
 }
 
-/** 独立的圆形玻璃按钮（返回、关闭等）；转发 ref 和其余属性，可作为 Radix 组件的 asChild 子元素 */
 export const GlassButton = forwardRef<HTMLButtonElement, { icon: ReactNode; label: string; className?: string } & Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'className'>>(
   function GlassButton({ icon, label, className = '', ...rest }, ref) {
     return (

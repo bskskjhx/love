@@ -2,10 +2,6 @@ import type { ChatMeta, Message } from './types'
 
 export const GENERAL = 1
 
-/**
- * 消息属于哪个话题：新抓取的数据直接带 topic；旧存档按官方规则推算——
- * 话题里的普通消息“回复”的是话题创建消息，回复别的消息则沿回复链找，都没有则属于 General。
- */
 export function topicResolver(meta: ChatMeta) {
   const ids = new Set(meta.topics?.map((t) => t.id) ?? [])
   const cache = new Map<number, number>()

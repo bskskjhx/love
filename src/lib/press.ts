@@ -1,10 +1,3 @@
-/**
- * iOS 27 式按压放大：给元素加 data-press 即可，按下时加 .is-pressed，松手弹回。
- * 与 :active 相比更适合手机：
- * - 触屏按下后稍等片刻再放大，手指一滑动（滚动列表/横滑标签）立即取消，不会一划就闪
- * - 快速轻点也保证放大持续一小段时间，反馈看得见
- * 全局只挂一组委托监听，列表再长也没有额外开销。
- */
 const DELAY = 40
 const MIN_SHOWN = 150
 const SLOP = 10
@@ -68,7 +61,6 @@ export function installPress() {
     opts,
   )
   document.addEventListener('pointerup', (e) => cur && e.pointerId === cur.id && release(), opts)
-  // 浏览器接管为滚动时会发 pointercancel
   document.addEventListener('pointercancel', cancel, opts)
   document.addEventListener('scroll', cancel, opts)
 }

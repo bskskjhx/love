@@ -16,9 +16,7 @@
     <link rel="manifest" href="%BASE_URL%manifest.webmanifest" />
     <title>群聊存档</title>
     <script>
-      // 在首帧之前应用主题，避免闪烁
       try {
-        // zustand persist 格式为 {"state":{"pref":"dark"}}，旧版直接存字符串
         var t = localStorage.getItem('theme')
         try { t = JSON.parse(t).state.pref } catch (e) {}
         if (t === 'dark' || (t !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches))

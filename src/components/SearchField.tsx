@@ -8,7 +8,6 @@ interface Props {
   placeholder?: string
   autoFocus?: boolean
   onSubmit?: () => void
-  /** 悬浮在内容上时用玻璃材质 */
   glass?: boolean
 }
 

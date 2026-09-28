@@ -11,12 +11,10 @@ interface Props {
   days: Record<string, [number, number]>
   firstDate?: number
   lastDate?: number
-  /** 当前正在看的消息时间，决定默认显示哪个月 */
   current?: number
   onPick: (msgId: number) => void
 }
 
-/** 存档时区里的日期 → 日历上的那一天（日历本身只关心年月日，用本地时间的 Date 表示） */
 const dateOf = (ts: number) => {
   const p = parts(ts)
   return new Date(p.y, p.m - 1, p.d)
@@ -26,7 +24,6 @@ const monthStart = (d: Date) => new Date(d.getFullYear(), d.getMonth(), 1)
 
 const monthPrefix = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-`
 
-/** 自定义的日期格子与月份标题要用到的数据（组件定义在模块级，避免每次渲染重建导致格子重新挂载） */
 const Ctx = createContext<{ days: Props['days']; max: number; pick: (key: string) => void }>({ days: {}, max: 1, pick: () => {} })
 
 function MonthCaption({ calendarMonth, displayIndex: _i, ...rest }: MonthCaptionProps) {
@@ -62,14 +59,12 @@ function DayButton({ day, modifiers, className: _c, style: _s, ...rest }: DayBut
 
 const Chevron = ({ orientation }: { orientation?: string }) => (orientation === 'left' ? <ChevronLeft size={22} /> : <ChevronRight size={22} />)
 
-/** 跳转到日期（react-day-picker）：有消息的日子按消息量着色，点击跳到当天第一条 */
 export function CalendarSheet({ open, onClose, days, firstDate, lastDate, current, onPick }: Props) {
   const now = Date.now() / 1000
   const first = monthStart(dateOf(firstDate ?? now))
   const last = monthStart(dateOf(lastDate ?? firstDate ?? now))
   const [month, setMonth] = useState(() => monthStart(dateOf(current ?? lastDate ?? now)))
   const [openedWith, setOpenedWith] = useState(open)
-  // 每次打开时跳到当前浏览位置所在月份
   if (open !== openedWith) {
     setOpenedWith(open)
     if (open) setMonth(monthStart(dateOf(current ?? lastDate ?? now)))

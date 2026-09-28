@@ -18,7 +18,6 @@ export default function App() {
   const route = parseRoute(hash)
   const [ready, setReady] = useState(false)
 
-  // 先拿到时区设置再渲染，保证日期分组一致
   useEffect(() => {
     getIndex()
       .then((i) => i.timezone && setTimeZone(i.timezone))
@@ -108,10 +107,6 @@ const MAX_KEEP = 4
 
 let swipeRelease = 0
 
-/**
- * 独立 App 模式下从屏幕左边缘右滑返回（手势识别用 @use-gesture：锁定横向、10px 起步、按速度判断），
- * 页面和下一层的位移、阴影由这里直接写样式，跟手不经过 React。
- */
 function useEdgeSwipeBack(container: React.RefObject<HTMLDivElement | null>, busy: boolean) {
   const busyRef = useRef(busy)
   busyRef.current = busy

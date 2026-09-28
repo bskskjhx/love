@@ -7,7 +7,6 @@ import { useScrolling } from '../lib/scrolling'
 type Player = typeof import('lottie-web/build/player/lottie_light').default
 type Anim = ReturnType<Player['loadAnimation']>
 
-// 播放器按需加载（不进首包），同一个贴纸的动画数据只解压一次
 let player: Promise<Player> | null = null
 const loadPlayer = () => (player ??= import('lottie-web/build/player/lottie_light').then((m) => m.default))
 const dataCache = new Map<string, Promise<unknown>>()
@@ -18,7 +17,6 @@ function loadTgs(file: string): Promise<unknown> {
   if (!p) {
     p = fetch(dataUrl(file)).then(async (r) => {
       if (!r.ok || !r.body) throw new Error(String(r.status))
-      // .tgs = gzip 压缩的 Lottie JSON
       const stream = r.body.pipeThrough(new DecompressionStream('gzip'))
       return JSON.parse(await new Response(stream).text())
     })
@@ -28,7 +26,6 @@ function loadTgs(file: string): Promise<unknown> {
   return p
 }
 
-/** Telegram 动画贴纸（.tgs）：进入屏幕才加载，离屏暂停；不支持或出错时显示表情 */
 export function LottieSticker({ file, emoji }: { file: string; emoji?: string }) {
   const { autoplayStickers } = usePrefs()
   const scrolling = useScrolling()
@@ -73,7 +70,6 @@ export function LottieSticker({ file, emoji }: { file: string; emoji?: string })
       data-lottie={file}
       title="贴纸"
       aria-label={emoji ? `${emoji} 贴纸` : '贴纸'}
-      // 点按重播一遍（关闭自动播放时也能看）
       onClick={(e) => {
         const a = anim.current
         if (!a) return

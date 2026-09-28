@@ -4,7 +4,6 @@ import { pad, parts } from './format'
 import { scanChat } from './scan'
 import type { ChatMeta, Message } from './types'
 
-/** 消息类型（统计用，比共享媒体的分类更细） */
 export const KINDS = [
   ['text', '文字'],
   ['photo', '图片'],
@@ -44,18 +43,13 @@ function kindOf(m: Message): Kind {
   }
 }
 
-/** 一个统计对象（全群或某个成员） */
 export interface Tally {
   total: number
-  /** 天序号（存档时区的日期，自 1970-01-01 起的天数）→ 条数 */
   days: Map<number, number>
   hours: number[]
-  /** 0 = 周日 */
   weekdays: number[]
-  /** weekday * 24 + hour */
   heat: number[]
   kinds: Record<Kind, number>
-  /** 文字字符数（不含媒体） */
   chars: number
   forwards: number
   replies: number
@@ -83,7 +77,6 @@ export interface ChatStats {
 }
 
 const DAY = 86400000
-/** 天序号 ↔ 日期 */
 export const dayNum = (y: number, m: number, d: number) => Date.UTC(y, m - 1, d) / DAY
 export const dateOf = (n: number) => {
   const d = new Date(n * DAY)
@@ -104,7 +97,6 @@ function add(t: Tally, day: number, hour: number, wd: number, kind: Kind, m: Mes
   if (m.date > t.last) t.last = m.date
 }
 
-/** 扫描进度（0–1），按群 id */
 export const useStatsProgress = create<Record<number, number>>(() => ({}))
 
 async function compute(meta: ChatMeta): Promise<ChatStats> {
@@ -113,7 +105,7 @@ async function compute(meta: ChatMeta): Promise<ChatStats> {
   const done = await scanChat(
     meta,
     (m) => {
-      if (m.svc) return // 服务消息（进群、置顶等）不算发言
+      if (m.svc) return
       const p = parts(m.date)
       const day = dayNum(p.y, p.m, p.d)
       const hour = Number(p.hh)
@@ -131,7 +123,6 @@ async function compute(meta: ChatMeta): Promise<ChatStats> {
   return { group, users }
 }
 
-/** 全群统计；存档更新后（updatedAt 变化）重新计算 */
 export function useChatStats(meta: ChatMeta | undefined) {
   return useQuery({
     queryKey: ['stats', meta?.id, meta?.updatedAt],
@@ -140,15 +131,13 @@ export function useChatStats(meta: ChatMeta | undefined) {
   })
 }
 
-// ---- 聚合
 
 export type Grain = 'day' | 'week' | 'month'
 
-/** 桶的起始天序号 */
 function bucketOf(day: number, grain: Grain): number {
   if (grain === 'day') return day
   const { y, m, wd } = dateOf(day)
-  if (grain === 'week') return day - ((wd + 6) % 7) // 周一开始
+  if (grain === 'week') return day - ((wd + 6) % 7)
   return dayNum(y, m, 1)
 }
 
@@ -165,7 +154,6 @@ export function bucketLabel(b: number, grain: Grain): string {
   return `${y}-${pad(m)}-${pad(d)}`
 }
 
-/** 连续的桶（没有消息的也补 0），从 from 到 to 天 */
 export function buckets(from: number, to: number, grain: Grain): number[] {
   const out: number[] = []
   if (!Number.isFinite(from) || !Number.isFinite(to)) return out
@@ -173,7 +161,6 @@ export function buckets(from: number, to: number, grain: Grain): number[] {
   return out
 }
 
-/** 某个统计对象在各桶里的条数 */
 export function series(t: Tally, keys: number[], grain: Grain): number[] {
   const idx = new Map(keys.map((k, i) => [k, i]))
   const out = Array(keys.length).fill(0)
@@ -184,7 +171,6 @@ export function series(t: Tally, keys: number[], grain: Grain): number[] {
   return out
 }
 
-/** 各桶里发过言的人数 */
 export function activeSenders(stats: ChatStats, keys: number[], grain: Grain): number[] {
   const idx = new Map(keys.map((k, i) => [k, i]))
   const out = Array(keys.length).fill(0)
@@ -202,7 +188,6 @@ export function activeSenders(stats: ChatStats, keys: number[], grain: Grain): n
   return out
 }
 
-/** 移动平均（窗口内不足时按已有的算） */
 export function movingAverage(xs: number[], w: number): number[] {
   const out: number[] = []
   let sum = 0
@@ -214,14 +199,12 @@ export function movingAverage(xs: number[], w: number): number[] {
   return out
 }
 
-/** 最高的一天 */
 export function peakDay(t: Tally): [day: number, n: number] | undefined {
   let best: [number, number] | undefined
   for (const [d, n] of t.days) if (!best || n > best[1]) best = [d, n]
   return best
 }
 
-/** 最长连续发言天数 */
 export function longestStreak(t: Tally): number {
   const days = [...t.days.keys()].sort((a, b) => a - b)
   let best = 0
@@ -233,7 +216,6 @@ export function longestStreak(t: Tally): number {
   return best
 }
 
-/** 按发言数排名（1 起） */
 export function rankOf(stats: ChatStats, id: number): number | undefined {
   const me = stats.users.get(id)
   if (!me) return undefined

@@ -1,6 +1,5 @@
 import { Switch as RadixSwitch } from 'radix-ui'
 
-/** iOS 开关（Radix Switch：键盘、读屏语义由 Radix 负责，外观全部自定义） */
 export function Switch({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
   return (
     <RadixSwitch.Root

@@ -2,7 +2,6 @@ import { Checkbox } from 'radix-ui'
 import type { ReactNode } from 'react'
 import { CheckCircle, Circle, Copy, Share } from '../components/Icons'
 
-/** 多选模式下的一行：左侧是 Radix Checkbox（读屏、键盘可用），点整行任意位置也会切换 */
 export function SelectRow({ on, onToggle, children }: { on: boolean; onToggle: () => void; children: ReactNode }) {
   return (
     <div

@@ -15,7 +15,6 @@ function cachedChat(chatKey: string): ChatData | undefined {
   return meta && users ? { meta, users: withChat(users, meta) } : undefined
 }
 
-/** 群资料与成员（TanStack Query）：已预取过就直接同步拿到，首帧不闪加载状态 */
 export function useChat(chatKey: string): { chat: ChatData | null; error: Error | null; retry: () => void } {
   const q = useQuery({
     queryKey: ['chat', chatKey],

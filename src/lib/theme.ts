@@ -9,7 +9,6 @@ export type ThemePref = 'system' | 'light' | 'dark'
 const media = matchMedia('(prefers-color-scheme: dark)')
 const asPref = (v: unknown): ThemePref => (v === 'light' || v === 'dark' ? v : 'system')
 
-/** 外观偏好（index.html 里的首帧脚本也读这个键，改格式时要一起改） */
 const useThemeStore = create<{ pref: ThemePref }>()(persist(() => ({ pref: 'system' as ThemePref }), { name: 'theme', storage: persistStorage('local', (v) => ({ pref: asPref(v) })) }))
 function apply() {
   const pref = useThemeStore.getState().pref
@@ -39,7 +38,6 @@ export function useDocumentTitle(title: string | undefined) {
   }, [title, active])
 }
 
-// ---- 玻璃效果：0 = 通透，1 = 着色（对应 iOS 27 设置里的透明度滑块）
 
 const clampTint = (v: unknown) => Math.min(1, Math.max(0, Number(v) || 0))
 const useGlassStore = create<{ tint: number }>()(persist(() => ({ tint: 0.5 }), { name: 'glassTint', storage: persistStorage('local', (v) => ({ tint: clampTint(v) })) }))
@@ -53,7 +51,6 @@ export function setGlassTint(v: number) {
 
 export const useGlassTint = () => useGlassStore((s) => s.tint)
 
-/** 当前是否深色（跟随根元素上的 dark 类，外观设置和系统切换都会更新） */
 const darkListeners = new Set<() => void>()
 new MutationObserver(() => darkListeners.forEach((l) => l())).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
 export function useIsDark(): boolean {

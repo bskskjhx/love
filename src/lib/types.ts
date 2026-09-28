@@ -1,4 +1,3 @@
-/** 与 scraper/scrape.py 输出的 JSON 结构保持一致 */
 
 export type Entity = [type: string, offset: number, length: number, extra?: string | number]
 
@@ -39,7 +38,6 @@ export interface Media {
   address?: string
   value?: number
   note?: string
-  /** 语音波形，0–31 */
   wave?: number[]
 }
 
@@ -78,7 +76,6 @@ export interface Message {
   reacts?: [string, number][]
   views?: number
   svc?: Service
-  /** 论坛话题 id（General = 1） */
   topic?: number
 }
 
@@ -88,12 +85,9 @@ export interface User {
   avatar?: string
   bot?: boolean
   chat?: boolean
-  /** 管理员头衔（自定义头衔 / 所有者 / 管理员） */
   title?: string
-  /** owner = 群组所有者，admin = 其他管理员 */
   role?: 'owner' | 'admin'
   count?: number
-  /** 个人简介 */
   bio?: string
   premium?: boolean
   verified?: boolean
@@ -148,14 +142,12 @@ export interface Topic {
 export interface ChatMeta extends ChatSummary {
   about?: string
   forum?: boolean
-  /** 当前置顶的消息 id（新 → 旧） */
   pins?: number[]
   topics?: Topic[]
   firstId?: number
   lastId?: number
   chunkSize?: number
   chunks: ChunkInfo[]
-  /** 日期 → [当天第一条消息 id, 当天消息数] */
   days: Record<string, [number, number]>
 }
 

@@ -2,26 +2,19 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { persistStorage } from './store'
 
-/** 本机偏好设置（对应 Telegram 设置里的外观、数据与存储等项），存在 localStorage */
 interface Prefs {
-  /** 消息字号档位 0–6，默认 2（16px） */
   fontStep: number
-  /** 聊天背景预设 key */
   wallpaper: string
   autoplayGif: boolean
   autoplayVideo: boolean
   autoplayStickers: boolean
-  /** 省流量：图片只加载缩略图，视频不预加载 */
   dataSaver: boolean
-  /** 语音/音频播放倍速 */
   playbackRate: number
-  /** 本机置顶的群（id） */
   pinnedChats: number[]
 }
 
 export const FONT_SIZES = [13, 14, 16, 17, 18, 20, 22]
 
-/** 聊天背景预设（浅色 / 深色各一套），pattern 为是否叠加官方式的涂鸦图案 */
 export const WALLPAPERS: { key: string; label: string; light: string; dark: string; pattern?: boolean }[] = [
   { key: 'default', label: '默认', light: 'linear-gradient(160deg, #d9e6cf 0%, #c3d9c4 45%, #d9e2c3 100%)', dark: 'linear-gradient(160deg, #0d1512 0%, #0b0f14 50%, #121212 100%)' },
   { key: 'blue', label: '晴空', light: 'linear-gradient(160deg, #cfe3f6 0%, #a8c8ea 50%, #d6e6f5 100%)', dark: 'linear-gradient(160deg, #0e1621 0%, #17212b 60%, #0f1923 100%)', pattern: true },
@@ -31,7 +24,6 @@ export const WALLPAPERS: { key: string; label: string; light: string; dark: stri
   { key: 'plain', label: '纯色', light: '#e9e9ee', dark: '#000000' },
 ]
 
-/** 官方式的涂鸦图案，极淡地叠在渐变上 */
 const PATTERN = (color: string) =>
   `url("data:image/svg+xml,${encodeURIComponent(
     `<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180' fill='none' stroke='${color}' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'>` +
@@ -51,12 +43,10 @@ const DEFAULTS: Prefs = {
   pinnedChats: [],
 }
 
-/** 偏好设置（zustand + persist，存在 localStorage；新增的设置项自动使用默认值） */
 const usePrefsStore = create<Prefs>()(persist(() => DEFAULTS, { name: 'prefs', storage: persistStorage('local', (v) => ({ ...DEFAULTS, ...(v as Partial<Prefs>) })) }))
 usePrefsStore.subscribe(apply)
 apply()
 
-/** 字号直接写到根元素的 CSS 变量上，气泡里的文字、行高都据此缩放 */
 function apply() {
   const prefs = usePrefsStore.getState()
   const size = FONT_SIZES[prefs.fontStep] ?? 16

@@ -5,10 +5,6 @@ import { navigate, paths } from '../lib/router'
 import { duration } from '../lib/format'
 import { Close, Pause, Play } from './Icons'
 
-/**
- * 顶部迷你播放条（同官方）：跨页面保留，显示正在播放的语音/音频，可暂停、调倍速、关闭，
- * 点标题回到那条消息。显示时在根元素写入 --player-h，聊天页据此把置顶条和内容往下让。
- */
 export function MiniPlayer() {
   const st = usePlayer()
   const t = st.track

@@ -11,19 +11,6 @@ import { MessageItem, type ItemHandlers } from './MessageItem'
 import type { Row } from './rows'
 import { SelectRow } from './SelectMode'
 
-/**
- * 聊天消息列表（虚拟列表）
- *
- * 滚动容器用 column-reverse：滚动原点在底部，视口上方（更早的消息）插入、删除、尺寸变化都不会移动可见内容，
- * 由浏览器原生保证，不写 scrollTop，也就不会打断 iOS 的惯性滚动。只有视口下方的变化才需要补偿：
- * - 移出窗口的行用实测高度的占位代替，窗口增删不改变总高度
- * - 下方即将进入窗口的行在空闲时先离屏测量
- * - 其余少数情况（新加载的块、数据变化导致高度变化）在绘制前按锚点补偿，不会闪
- * 定位消息：把目标所在的一段渲染出来，绘制前按实测位置写准，之后几帧再核对。
- *
- * 滚动进行中改动 DOM 必须放在 requestAnimationFrame 里同步提交：若在两帧之间的任务里提交，
- * 合成线程上已经滚过的距离会在下一帧按“距顶部的偏移”同步回来，上方高度的变化就会变成可见的跳动。
- */
 
 export interface Place {
   key: string
@@ -39,11 +26,8 @@ export interface Clearance {
 export interface ListHandle {
   place(p: Place, opts?: { smooth?: boolean; onDone?: () => void }): void
   toBottom(smooth: boolean): void
-  /** 导航栏下方第一行（用于记录位置、日期浮标） */
   topRow(itemsOnly: boolean): { key: string; offset: number } | null
-  /** 视口底部最后一条可见的行 */
   bottomRow(): string | null
-  /** 某一行是否整体可见（在导航栏和底部栏之间） */
   isVisible(key: string): boolean
   scroller(): HTMLElement | null
 }
@@ -70,7 +54,6 @@ interface Props extends Ctx {
   firstDate?: number
   onStartReached: () => void
   onEndReached: () => void
-  /** 是否已到最底部：由底部哨兵元素的 IntersectionObserver 驱动，与滚动事件、窗口更新无关 */
   onAtBottom: (b: boolean) => void
   onScroll: () => void
   onInitialDone?: () => void
@@ -78,18 +61,14 @@ interface Props extends Ctx {
 
 const START_GAP = 44
 const DEFAULT_H = 72
-/** 视口外渲染的距离（屏）：滚动中少于 KEEP 时补到 FILL；空闲时预先补到 IDLE_FILL，滚动时就很少需要渲染新行；超过 TRIM 的移出窗口 */
 const KEEP = 1.5
 const FILL = 2.5
 const IDLE_FILL = 4
 const TRIM = 6
-/** 下方预先测量的行数 */
 const MEASURE_AHEAD = 160
 const MEASURE_BATCH = 8
-/** 每帧最多补多少行：滚动中的提交是同步的，分摊到多帧，每帧工作量都很小 */
 const STEP = 3
 const IDLE_STEP = 16
-/** 离已加载边界还剩多少行时加载相邻的块 */
 const LOAD_AHEAD = 120
 
 function replyCount(idx: ReplyIndex | null, item: Item) {
@@ -135,10 +114,6 @@ interface Win {
 
 const clampIdx = (i: number, n: number) => Math.max(0, Math.min(n - 1, i))
 
-/**
- * 在 React 改动 DOM 之前记下锚点。滚动事件要到下一帧才派发，若在两者之间提交，
- * 靠滚动事件记录的锚点已经过时，补偿反而会把用户刚滚的距离撤销
- */
 class BeforeCommit extends Component<{ tick: unknown; take: () => void }> {
   getSnapshotBeforeUpdate() {
     this.props.take()
@@ -150,7 +125,6 @@ class BeforeCommit extends Component<{ tick: unknown; take: () => void }> {
   }
 }
 
-/** 树状数组：按下标求前缀和，占位高度不必每次遍历全部行 */
 class Fenwick {
   t: Float64Array
   constructor(n: number) {
@@ -188,10 +162,8 @@ export const MessageList = memo(
     if ((Object.keys(ctx) as (keyof Ctx)[]).some((k) => ctx[k] !== ctxRef.current[k])) ctxRef.current = ctx
     const stableCtx = ctxRef.current
 
-    // ---- 高度缓存：行 key → 实测高度；宽度、多选模式、回复数变化时整体失效
     const heights = useRef(new Map<string, number>())
     const [width, setWidth] = useState(0)
-    // 首次拿到宽度不算变化（挂载前测不到），之后宽度改变才让缓存失效
     const widthKey = useRef(0)
     if (width && !widthKey.current) widthKey.current = width
     const sig = `${width ? width : widthKey.current}:${props.selected ? 1 : 0}:${props.replyIdx ? 1 : 0}`
@@ -200,7 +172,6 @@ export const MessageList = memo(
       heights.current = new Map()
     }
     sigRef.current = sig
-    // 已测高度与未测行数各一棵树状数组；行列表或缓存变化时重建
     const sizes = useRef<{ rows: Row[]; map: Map<string, number>; known: Fenwick; unknown: Fenwick } | null>(null)
     if (!sizes.current || sizes.current.rows !== rows || sizes.current.map !== heights.current) {
       const known = new Fenwick(rows.length)
@@ -226,9 +197,7 @@ export const MessageList = memo(
     }
     const hOf = (key: string) => heights.current.get(key) ?? DEFAULT_H
 
-    // ---- 渲染窗口（记录首尾行的 key，向上预置消息后下标变化也不受影响）
     const around = (rs: Row[], i: number, span = 30): Win => ({ lo: rs[clampIdx(i - span, rs.length)]?.key ?? '', hi: rs[clampIdx(i + span, rs.length)]?.key ?? '' })
-    // 首帧只渲染大约一屏，转场结束后再补齐
     const [win, setWin] = useState<Win>(() => {
       const screen = Math.ceil(window.innerHeight / 40)
       if (initial === 'bottom') return { lo: rows[Math.max(0, n - screen)]?.key ?? '', hi: rows[n - 1]?.key ?? '' }
@@ -241,7 +210,6 @@ export const MessageList = memo(
       hi = n
     }
 
-    // 未测量的行一律按固定高度估算：若用随测量变化的平均值，占位高度会在没有任何行变化时漂移，造成跳动
     const { known, unknown } = sizes.current
     const topSpace = known.sum(lo) + unknown.sum(lo) * DEFAULT_H
     const bottomSpace = known.sum(n) - known.sum(hi) + (unknown.sum(n) - unknown.sum(hi)) * DEFAULT_H
@@ -249,11 +217,8 @@ export const MessageList = memo(
     const live = useRef({ rows, index, lo, hi, n, clearance, onScroll, onStartReached, onEndReached, onAtBottom })
     live.current = { rows, index, lo, hi, n, clearance, onScroll, onStartReached, onEndReached, onAtBottom }
 
-    // ---- 锚点：记下一行可见内容的位置，DOM 或尺寸变化后它若被挪动就在绘制前补偿
     const anchor = useRef<{ key: string; top: number } | null>(null)
-    // 定位完成后目标行成为锚点，直到用户自己滚动：之后任何高度变化都不会把它挤走
     const lock = useRef<Place | null>(null)
-    /** 最近一次由列表自己写入的 scrollTop；滚动事件与它不符说明是用户在滚动 */
     const written = useRef<number | null>(null)
     const pinnedBottom = useRef(initial === 'bottom')
     const rowEl = (key: string) => content.current?.querySelector<HTMLElement>(`:scope > [data-row="${CSS.escape(key)}"]`) ?? null
@@ -270,7 +235,6 @@ export const MessageList = memo(
       pinnedBottom.current = sc.scrollTop > -2
       const sr = sc.getBoundingClientRect()
       const line = sr.top + sr.height * 0.35
-      // 上一次的锚点仍在视口中部附近就直接复用，滚动时不必每次从头找
       const prev = anchorEl.current
       if (prev?.isConnected && prev.parentElement === ct) {
         const r = prev.getBoundingClientRect()
@@ -309,7 +273,6 @@ export const MessageList = memo(
       }
     }, [])
 
-    // ---- 定位
     const pending = useRef<{ p: Place; onDone?: () => void } | null>(null)
     const job = useRef(0)
     const raf = useRef(0)
@@ -322,7 +285,6 @@ export const MessageList = memo(
       return c.top + (space - h) * 0.4
     }
 
-    /** 把已渲染的目标行放到预期位置；返回是否已到位（到了滚动边界也算），未渲染返回 null */
     const applyPlace = (p: Place): boolean | null => {
       const sc = scroller.current
       const el = rowEl(p.key)
@@ -343,7 +305,6 @@ export const MessageList = memo(
       lock.current = null
     }, [])
 
-    /** 绘制后再核对几帧（异步内容可能改变高度），直到连续稳定 */
     const verify = (p: Place, onDone?: () => void) => {
       const id = ++job.current
       let stable = 0
@@ -445,7 +406,6 @@ export const MessageList = memo(
       [cancelJob, recordAnchor],
     )
 
-    // ---- 根据滚动位置扩展/收缩窗口
     const updateWindow = useCallback((idle = false) => {
       const fill = idle ? IDLE_FILL : FILL
       const keep = idle ? IDLE_FILL : KEEP
@@ -454,7 +414,6 @@ export const MessageList = memo(
       const ct = content.current
       const { rows: rs, lo: l, hi: h, n: total } = live.current
       if (!sc || !ct || !total || pending.current) return
-      // 结构固定为：头部、上占位、各行、下占位、底部
       const kids = ct.children
       const firstEl = kids.length > 4 ? (kids[2] as HTMLElement) : null
       const lastEl = kids.length > 4 ? (kids[kids.length - 3] as HTMLElement) : null
@@ -469,7 +428,6 @@ export const MessageList = memo(
         const fr = firstEl.getBoundingClientRect()
         const lr = lastEl.getBoundingClientRect()
         if (lr.bottom < sr.top - vh || fr.top > sr.bottom + vh) {
-          // 视口落在占位区（拖动滚动条、极快的甩动）：按高度推算出位置
           const y = sr.top - ct.getBoundingClientRect().top - (ct.firstElementChild as HTMLElement).offsetHeight
           let acc = 0
           let i = 0
@@ -504,12 +462,10 @@ export const MessageList = memo(
       if (total - nh < LOAD_AHEAD) live.current.onEndReached()
     }, [])
 
-    // ---- 每次提交后、绘制前：测量窗口内各行，按锚点补偿，处理待定位
     useLayoutEffect(() => {
       const ct = content.current
       if (ct) for (const el of ct.querySelectorAll<HTMLElement>(':scope > [data-row]')) if (!heights.current.has(el.dataset.row!)) setHeight(el.dataset.row!, el.offsetHeight)
       const pend = pending.current
-      // 目标行已不在列表中（数据变化）：放弃这次定位，否则窗口会一直停止更新
       if (pend && !live.current.index.has(pend.p.key)) {
         pending.current = null
         pend.onDone?.()
@@ -535,7 +491,6 @@ export const MessageList = memo(
       }
     })
 
-    // ---- 窗口内行的尺寸变化（异步内容、字体等）：ResizeObserver 在绘制前回调，同一帧内补偿
     useEffect(() => {
       const ct = content.current
       if (!ct) return
@@ -561,7 +516,6 @@ export const MessageList = memo(
       }
     }, [restoreAnchor, recordAnchor])
 
-    // ---- 宽度变化时高度全部失效
     useEffect(() => {
       const sc = scroller.current
       if (!sc) return
@@ -570,8 +524,6 @@ export const MessageList = memo(
       return () => ro.disconnect()
     }, [])
 
-    // ---- 停止滚动后离屏测量窗口下方尚未测量的行（上方的变化不影响可见内容，不必预先测量）
-    // 测量结果会改变下方占位高度，由锚点补偿；只在静止时做，补偿不会和用户的滚动交错
     const lastScroll = useRef(0)
     const [measure, setMeasure] = useState<Row[]>([])
     const [, setMeasureTick] = useState(0)
@@ -601,7 +553,6 @@ export const MessageList = memo(
       setMeasure([])
     }, [measure, recordAnchor])
 
-    // ---- 滚动
     useEffect(() => {
       const sc = scroller.current
       if (!sc) return
@@ -633,7 +584,6 @@ export const MessageList = memo(
       }
     }, [cancelJob, recordAnchor, updateWindow])
 
-    // ---- 是否在最底部：观察内容末尾的哨兵，进入视口（留 80px 余量）即视为到底
     const bottomSentinel = useRef<HTMLDivElement>(null)
     useEffect(() => {
       const sc = scroller.current
@@ -644,7 +594,6 @@ export const MessageList = memo(
       return () => io.disconnect()
     }, [])
 
-    // ---- 首次定位（每轮加载挂载一次）
     useLayoutEffect(() => {
       setWidth(content.current?.clientWidth ?? 0)
       if (initial === 'bottom') {
@@ -662,7 +611,6 @@ export const MessageList = memo(
       return cancelJob
     }, [])
 
-    // 已测量的行离屏时跳过绘制；占位尺寸就是实测高度，不会引起任何位移
     const items = []
     for (let i = lo; i < hi; i++) {
       const row = rows[i]

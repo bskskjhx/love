@@ -38,10 +38,8 @@ const GRAINS: { v: Grain; label: string }[] = [
   { v: 'week', label: '按周' },
   { v: 'month', label: '按月' },
 ]
-/** 周一开头 */
 const WD_ORDER = [1, 2, 3, 4, 5, 6, 0]
 const pct = (a: number, b: number) => (b ? Math.round((a / b) * 1000) / 10 : 0)
-/** 占比文字，很小但不为 0 时写成 <0.1% */
 const share = (a: number, b: number) => (a && pct(a, b) === 0 ? '<0.1%' : `${pct(a, b)}%`)
 const dayText = (n: number) => {
   const { y, m, d } = dateOf(n)
@@ -169,7 +167,6 @@ function Segmented<T extends string>({ items, value, onChange, label }: { items:
   )
 }
 
-// ---- 概览
 
 function Hero({ stats, t, member }: { stats: ChatStats; t: Tally; member: boolean }) {
   const dark = useIsDark()
@@ -274,9 +271,7 @@ function Summary({ t, stats, member }: { t: Tally; stats: ChatStats; member?: nu
   )
 }
 
-// ---- 趋势
 
-/** 默认显示最近这么多个桶，其余拖动下方滑块查看 */
 const VISIBLE: Record<Grain, number> = { day: 60, week: 40, month: 36 }
 const MIN_BARS = 7
 
@@ -425,7 +420,6 @@ function Trend({ stats, t, member }: { stats: ChatStats; t: Tally; member: boole
   )
 }
 
-// ---- 分布
 
 type RhythmView = 'hour' | 'week' | 'heat'
 const RHYTHM: { v: RhythmView; label: string }[] = [
@@ -575,7 +569,6 @@ function Kinds({ t }: { t: Tally }) {
   )
 }
 
-// ---- 排行
 
 const TOP = 20
 const FOLD = 10

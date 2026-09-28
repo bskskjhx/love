@@ -56,14 +56,12 @@
   --fill2: rgba(120, 120, 128, 0.2);
   --bubble: #ffffff;
   --danger: #ff3b30;
-  /* 聊天背景由设置决定（lib/prefs.ts 写入 --wp-*） */
   --chat-bg: var(--wp-light, linear-gradient(160deg, #d9e6cf 0%, #c3d9c4 45%, #d9e2c3 100%));
   --chat-pattern: var(--wp-pattern-light, none);
   --nav-h: 56px;
   --player-h: 0px;
   --pinned-h: 0px;
 
-  /* Liquid Glass（iOS 27）：--glass-tint 0 = 通透，1 = 着色，由设置里的滑块控制 */
   --glass-tint: 0.5;
   --glass-rgb: 250 250 252;
   --glass-alpha: calc(0.2 + var(--glass-tint) * 0.7);
@@ -116,7 +114,6 @@
   }
 }
 
-/* 系统“提高对比度”：玻璃更实、描边更深 */
 @media (prefers-contrast: more) {
   :root {
     --glass-alpha: 0.95;
@@ -144,7 +141,6 @@
     padding-right: var(--safe-right);
   }
 
-  /* 全局禁用双击缩放的等待，任何可点元素（含带 onClick 的 div/图片）都没有点击延迟；双指缩放不受影响 */
   html,
   html,
   body,
@@ -167,7 +163,6 @@
     line-height: 1.35;
     overscroll-behavior-y: none;
     -webkit-font-smoothing: antialiased;
-    /* 不出现浏览器原生的长按菜单/预览（iOS），右键菜单在 lib/nativeMenu.ts 中拦截 */
     -webkit-touch-callout: none;
   }
 
@@ -178,7 +173,6 @@
     -webkit-user-drag: none;
   }
 
-  /* 触屏上长按不选中文字（否则会弹出系统的拷贝菜单），复制通过消息菜单完成；输入框照常可编辑 */
   @media (hover: none) {
     body {
       -webkit-user-select: none;
@@ -218,7 +212,6 @@
   background-size: 180px 180px, auto;
 }
 
-/* ---- Liquid Glass 材质：半透明 + 模糊 + 顶部高光 + 深色描边（iOS 27） */
 .glass {
   background:
     linear-gradient(180deg, var(--glass-sheen), transparent 55%),
@@ -232,7 +225,6 @@
     var(--glass-shadow);
 }
 
-/* 可按压的玻璃控件：按下时轻微放大变亮，像液体被按压 */
 .glass-press {
   transition:
     transform 0.6s var(--spring-bouncy),
@@ -241,7 +233,6 @@
     color 0.3s ease-out,
     box-shadow 0.3s ease-out;
 }
-/* ---- iOS 27 按压放大（见 lib/press.ts）：只动 transform，由合成线程完成，长列表里也不掉帧 */
 [data-press] {
   --press: 1.08;
   transition: transform 0.55s var(--spring-bouncy);
@@ -265,11 +256,9 @@
     filter: brightness(1.1);
   }
 }
-/* 正在输入的搜索框不再随点按缩放，避免移动光标、选字时抖动 */
 form[data-press]:focus-within.is-pressed {
   transform: none;
 }
-/* 列表行：轻微放大并浮起一张内缩的圆角底板，像 iOS 27 的列表按压；底板只做 opacity 动画 */
 .press-row {
   --press: 1.025;
   position: relative;
@@ -363,7 +352,6 @@ form[data-press]:focus-within.is-pressed {
   outline: none;
   background-color: var(--fill);
 }
-/* 滑动选择高亮条：在菜单项之间弹性跟随手指 */
 .menu-hl {
   background-color: var(--fill2);
   will-change: transform;
@@ -418,7 +406,6 @@ header .glass {
   backdrop-filter: none;
 }
 
-/* 弹出面板：更厚的玻璃 */
 .glass-sheet {
   background:
     linear-gradient(180deg, var(--glass-sheen), transparent 30%),
@@ -431,7 +418,6 @@ header .glass {
     0 18px 60px rgb(0 0 0 / 0.25);
 }
 
-/* 顶部滚动边缘：内容滚到栏下时逐渐模糊淡出，而不是一条分隔线 */
 .edge-top {
   background: linear-gradient(180deg, rgb(var(--edge-rgb) / 0.55), rgb(var(--edge-rgb) / 0.2) 70%, transparent);
   -webkit-backdrop-filter: blur(10px) saturate(160%);
@@ -440,7 +426,6 @@ header .glass {
   mask-image: linear-gradient(180deg, #000 60%, transparent);
 }
 
-/* 系统“降低透明度”：所有玻璃变为实色 */
 @media (prefers-reduced-transparency: reduce) {
   .glass,
   .glass-sheet,
@@ -507,7 +492,6 @@ header .glass {
   overscroll-behavior: contain;
 }
 
-/* 消息列表手动管理滚动锚点 */
 .messages {
   overflow-anchor: none;
 }
@@ -515,12 +499,10 @@ header .glass {
 .bubble-text {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  /* 设置里的消息字号（lib/prefs.ts） */
   font-size: var(--msg-size, 16px);
   line-height: 1.35;
 }
 
-/* 代码着色（highlight.js 的 hljs-* 类，配色取 Xcode 浅色 / 深色） */
 .code-block {
   --hl-kw: #9b2393;
   --hl-str: #c41a16;
@@ -600,7 +582,6 @@ header .glass {
   font-weight: 700;
 }
 
-/* 折叠的引用：只露出前三行并渐隐 */
 .quote-folded {
   max-height: calc(3 * 1.35em + 4px);
   overflow: hidden;
@@ -678,8 +659,6 @@ mark {
   }
 }
 
-/* 入场/退场只动 transform 与 opacity，交给合成线程；
-   对带 backdrop-filter 的玻璃元素做 filter 动画在手机上每帧都要重绘，容易掉帧 */
 @keyframes pop-in {
   from {
     transform: scale(0.86);
@@ -731,7 +710,6 @@ mark {
   }
 }
 
-/* 桌面端性能充裕，保留模糊入场 */
 @media (hover: hover) and (pointer: fine) {
   @keyframes pop-in {
     from {
@@ -919,9 +897,6 @@ mark {
   }
 }
 
-/* 设置里的玻璃滑块 */
-/* ---- 搜索页进出（iOS 27）：搜索按钮原地展开成搜索框，关闭按钮弹出，筛选标签依次落下，结果上浮淡入；
-   退出时反向收回到右侧。只用 transform / opacity / 小面积 clip-path，手机上不掉帧 */
 @keyframes search-under-out {
   to {
     transform: scale(0.95);
@@ -940,7 +915,6 @@ mark {
     transform: translateX(28px);
   }
   to {
-    /* 终点略大于胶囊本身，不裁掉玻璃阴影 */
     clip-path: inset(-12px round 34px);
   }
 }
@@ -1032,8 +1006,6 @@ mark {
   animation: search-rise-out 0.24s cubic-bezier(0.4, 0, 1, 1) both;
 }
 
-/* ---- 图片查看器（yet-another-react-lightbox）换成 iOS 27 照片的外观：
-   浅色模式显示界面时白底，点按隐藏界面后黑底；按钮是 Liquid Glass 圆钮/胶囊，浮在图片上 */
 .ios-lb {
   --yarl__color_backdrop: #000;
   --yarl__color_button: var(--label2);
@@ -1076,7 +1048,6 @@ html:not(.dark) .ios-lb.lb-on {
   }
 }
 
-/* 顶部：返回圆钮 + 标题胶囊（右侧占位保持居中） */
 .ios-lb .lb-top {
   position: absolute;
   inset: 0 0 auto;
@@ -1107,7 +1078,6 @@ html:not(.dark) .ios-lb.lb-on {
   text-align: center;
 }
 
-/* 底部工具栏：左分享、中“在聊天中显示”、右存储 */
 .ios-lb .yarl__toolbar {
   inset: auto 0 0;
   display: grid;
@@ -1154,12 +1124,10 @@ html:not(.dark) .ios-lb.lb-on {
   line-height: 1;
 }
 
-/* 说明文字：底部工具栏上方的玻璃卡片 */
 .ios-lb .yarl__slide_captions_container {
   --yarl__slide_captions_container_background: none;
   --yarl__slide_captions_container_padding: 0 16px;
 }
-/* 玻璃和内边距放在容器上：行数截断（line-clamp）只作用于文字本身，不会在内边距里露出半行 */
 .ios-lb .yarl__slide_description_container {
   left: 16px;
   right: 16px;
@@ -1176,7 +1144,6 @@ html:not(.dark) .ios-lb.lb-on {
   line-height: 1.4;
 }
 
-/* 左右切换：只在有鼠标的设备上显示（触屏用滑动，同 iOS） */
 .ios-lb .yarl__navigation_prev,
 .ios-lb .yarl__navigation_next {
   display: flex;
@@ -1199,7 +1166,6 @@ html:not(.dark) .ios-lb.lb-on {
   }
 }
 
-/* 点按隐藏界面 */
 .ios-lb .lb-chrome,
 .ios-lb .yarl__toolbar,
 .ios-lb .yarl__slide_captions_container,

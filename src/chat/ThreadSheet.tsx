@@ -6,10 +6,6 @@ import type { ChatMeta, Message, Users } from '../lib/types'
 import type { Item } from './grouping'
 import { MessageItem, type ItemHandlers } from './MessageItem'
 
-/**
- * 回复串（同官方“查看回复”）：顶部是原消息，下面按时间列出所有回复（含回复的回复）。
- * 点任意一条关闭面板并在聊天里跳到那条。
- */
 export function ThreadSheet({
   meta,
   users,
@@ -38,7 +34,6 @@ export function ThreadSheet({
     }
   }, [ids, meta])
   const items: Item[] = msgs.map((m, i) => ({ kind: 'msg', key: m.id, msgs: [m], first: i === 0 || msgs[i - 1].from !== m.from, last: true }))
-  // 面板里的气泡只读：点击跳转，不再弹出菜单或嵌套回复串
   const inner: ItemHandlers = useMemo(() => ({ ...handlers, onContext: () => {}, onReplies: undefined }), [handlers])
   const n = ids.length - 1
   return (

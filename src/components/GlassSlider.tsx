@@ -10,7 +10,6 @@ interface Props {
   valueText?: string
 }
 
-/** iOS 式滑块（Radix Slider：拖动、点按轨道、方向键都可用；外观自定义） */
 export function GlassSlider({ value, min, max, step, onChange, label, valueText }: Props) {
   return (
     <Slider.Root

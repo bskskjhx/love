@@ -21,9 +21,7 @@ interface Placement {
 
 const GAP = 10
 const EDGE = 12
-/** 长按后未抬起的手指需移动超过该距离才开始滑动选择，避免菜单恰好出现在指下时误触 */
 const SLIDE = 8
-/** 滑动中手指略微移出菜单边缘时仍保持最近一项高亮 */
 const TRACK_PAD = 28
 
 function spring(name: string, fallback: string) {
@@ -52,7 +50,6 @@ function Menu({ target, groups, onClose }: { target: HTMLElement; groups: MenuAc
 
   const previewRef = useRef<HTMLDivElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
-  // Radix Portal 在下一次渲染才挂载内容：用回调 ref 记下菜单节点，挂载后触发定位
   const [menuEl, setMenuEl] = useState<HTMLDivElement | null>(null)
   const attachMenu = (el: HTMLDivElement | null) => {
     menuRef.current = el
@@ -87,7 +84,6 @@ function Menu({ target, groups, onClose }: { target: HTMLElement; groups: MenuAc
 
   useCloseWhenInactive(open, onClose)
 
-  /** 高亮条在菜单项间弹性滑动（iOS 式），直接操作 DOM，避免滑动时重渲染 */
   const highlight = (el: HTMLElement | null, tick: boolean) => {
     const prev = hot.current
     if (el === prev) return
@@ -126,17 +122,8 @@ function Menu({ target, groups, onClose }: { target: HTMLElement; groups: MenuAc
   const fireRef = useRef(fire)
   fireRef.current = fire
 
-  /**
-   * 滑动选择：长按弹出菜单后手指不抬起，直接滑到菜单项上松手即可执行；
-   * 也可在菜单打开后按住任意位置滑动挑选。触屏走 touch 事件（可阻止页面滚动），鼠标支持右键按住拖选。
-   */
   useEffect(() => {
     if (!open) return
-    /**
-     * 按几何位置找最近的菜单项：分组之间的间隙、菜单边缘外一点点都归到最近一项，
-     * 滑过分组时高亮条连续移动而不是先消失再闪到下一组。
-     * 用 offsetTop（不受 transform 影响）换算，菜单入场缩放动画期间也准确，且不触发命中测试。
-     */
     const itemAt = (x: number, y: number, pad: number) => {
       const menu = menuRef.current
       if (!menu) return null
@@ -160,7 +147,6 @@ function Menu({ target, groups, onClose }: { target: HTMLElement; groups: MenuAc
     let g: { id: number; x: number; y: number; live: boolean } | null = null
     const touchOf = (e: TouchEvent) => (g ? Array.from(e.changedTouches).find((t) => t.identifier === g!.id) : e.changedTouches[0])
 
-    // 触摸采样可能高于刷新率：每帧只处理最后一个点
     let frame = 0
     let point: [number, number] | null = null
     const flush = () => {
@@ -184,7 +170,6 @@ function Menu({ target, groups, onClose }: { target: HTMLElement; groups: MenuAc
       if (e.cancelable) e.preventDefault()
       e.stopPropagation()
       if (done.current) return
-      // 没见过 touchstart 的触点即是触发长按的那根手指
       if (!g) {
         const t = e.changedTouches[0]
         g = { id: t.identifier, x: t.clientX, y: t.clientY, live: false }
@@ -204,7 +189,6 @@ function Menu({ target, groups, onClose }: { target: HTMLElement; groups: MenuAc
       const { live, x, y } = g
       g = null
       cancelFrame()
-      // 原地轻点只认菜单内部；滑动过的手势允许在边缘外一点松手
       const moved = Math.hypot(t.clientX - x, t.clientY - y) >= SLIDE
       const el = live ? itemAt(t.clientX, t.clientY, moved ? TRACK_PAD : 0) : null
       highlightRef.current(null, false)
@@ -255,9 +239,6 @@ function Menu({ target, groups, onClose }: { target: HTMLElement; groups: MenuAc
     if (!open || !target) return
     armed.current = null
     done.current = false
-    // 必须用精确的小数尺寸：offsetWidth 会取整（如 279.27 → 279），宽度哪怕少零点几像素，
-    // 克隆出来的气泡就会多折一行，底部变高、关闭时又缩回去。
-    // getBoundingClientRect 是精确值但包含按压缩放，这里除掉元素自身当前的 transform 缩放。
     const r = target.getBoundingClientRect()
     const t = getComputedStyle(target).transform
     const m = t && t !== 'none' ? new DOMMatrixReadOnly(t) : null
@@ -409,7 +390,6 @@ function Menu({ target, groups, onClose }: { target: HTMLElement; groups: MenuAc
     fire(a.label)
   }
 
-  // 外层是 Radix Dialog：焦点锁定与归还、Esc 关闭、读屏只读菜单、背景不可滚动；菜单内的滑动选择、高亮等 iOS 交互保持自定义
   return (
     <Dialog.Root open onOpenChange={(o) => !o && !closing && onClose()}>
       <Dialog.Portal>

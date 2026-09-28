@@ -9,7 +9,6 @@ import { userName, withChat } from '../lib/text'
 import { GENERAL } from '../lib/topics'
 import type { ChatMeta, Topic, Users } from '../lib/types'
 
-/** 话题图标：彩色圆形 + 首字，General 用 # */
 function TopicIcon({ t }: { t: Topic }) {
   if (t.id === GENERAL)
     return (
@@ -24,7 +23,6 @@ function TopicIcon({ t }: { t: Topic }) {
   )
 }
 
-/** 论坛群的话题列表（同官方：进入开启话题的群先看到话题，也可以“以消息形式查看”） */
 export function TopicsPage({ chatKey, meta, users: rawUsers }: { chatKey: string; meta: ChatMeta; users: Users }) {
   useDocumentTitle(meta.title)
   const users = withChat(rawUsers, meta)

@@ -40,7 +40,6 @@ const EMPTY: SearchState = { hits: [], progress: 0 }
 const YIELD_EVERY = 100
 
 const TYPES = MEDIA_KINDS
-/** 空格分隔的多个关键词，需全部命中 */
 const termsOf = (q: string) => norm(q).split(/\s+/).filter(Boolean)
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 const termsRe = (terms: string[]) => (terms.length ? new RegExp(`(${terms.map(escapeRe).join('|')})`, 'gi') : null)
@@ -54,14 +53,11 @@ function snippetAround(text: string, re: RegExp | null): string {
   return (start > 0 ? '…' : '') + flat.slice(start, idx + 120)
 }
 
-// 从消息返回搜索页时直接复用上次的结果和滚动位置
 const lastScroll = new Map<string, number>()
 const lastShown = new Map<string, number>()
 const PAGE_ROWS = 30
-/** 新结果首帧渲染的行数 */
 const FIRST_ROWS = 16
 
-/** 前端全文搜索：按从新到旧顺序逐块加载并匹配 */
 function useSearch(meta: ChatMeta | undefined, q: string, from?: number, type?: string) {
   const terms = termsOf(q)
   const typeTest = TYPES.find((t) => t.key === type)?.test
@@ -102,7 +98,6 @@ function useSearch(meta: ChatMeta | undefined, q: string, from?: number, type?: 
   }
 }
 
-// ---- 最近搜索（仅保存在本机）
 
 const RECENT_MAX = 8
 const recents = perChat<string[]>('recentSearches')
@@ -119,9 +114,7 @@ export function SearchPage({ chatKey, q, from, type }: { chatKey: string; q: str
   const [debounced] = useDebounce(input, 180)
   useEffect(() => {
     if (debounced !== q) navigate(paths.search(chatKey, debounced, from, type), { replace: true })
-    // 只在输入停顿后同步，避免与筛选条件切换互相覆盖
   }, [debounced])
-  // 地址被外部改变（如点击最近搜索）时同步输入框
   useEffect(() => {
     setInput((v) => (v.trim() === q.trim() ? v : q))
   }, [q])
@@ -142,7 +135,6 @@ export function SearchPage({ chatKey, q, from, type }: { chatKey: string; q: str
     if (meta) setRecent(loadRecent(meta.id))
   }, [meta])
 
-  // 跳转时带上输入框里尚未同步到地址的内容
   const go = (next: { q?: string; from?: number | null; type?: string | null }) =>
     navigate(
       paths.search(chatKey, next.q ?? input, next.from === null ? undefined : (next.from ?? from), next.type === null ? undefined : (next.type ?? type)),
@@ -163,11 +155,9 @@ export function SearchPage({ chatKey, q, from, type }: { chatKey: string; q: str
     saveRecent(meta.id, [])
   }
 
-  // 恢复返回前的滚动位置
   const [shownState, setShownState] = useState<{ key: string; n: number }>({ key, n: lastShown.get(key) ?? FIRST_ROWS })
   const shown = shownState.key === key ? shownState.n : (lastShown.get(key) ?? FIRST_ROWS)
   const setShownFor = (k: string, n: number) => setShownState({ key: k, n })
-  // 新结果先只排版一屏多一点，其余在空闲时补齐，输入后结果立刻出现
   useEffect(() => {
     if (shown >= PAGE_ROWS || hits.length <= shown) return
     return afterTransition(() => setShownFor(key, PAGE_ROWS))
@@ -387,7 +377,6 @@ export function SearchPage({ chatKey, q, from, type }: { chatKey: string; q: str
   )
 }
 
-/** 图片/视频结果右侧的缩略图 */
 function Thumb({ m }: { m: Message }) {
   const md = m.media
   if (!md || !['photo', 'video', 'gif', 'round'].includes(md.type)) return null
@@ -398,7 +387,6 @@ function Thumb({ m }: { m: Message }) {
 
 const PICKER_LIMIT = 200
 
-/** 选择要筛选的发言成员，按发言数从多到少排列 */
 function MemberPicker({
   open,
   onClose,
@@ -442,7 +430,6 @@ function MemberPicker({
   )
 }
 
-/** 高亮所有关键词 */
 function Highlight({ text, re }: { text: string; re: RegExp | null }) {
   if (!re) return <>{text}</>
   return (

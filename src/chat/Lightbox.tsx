@@ -23,7 +23,6 @@ interface Props {
   index: number
   onClose: () => void
   onIndex: (i: number) => void
-  /** 在聊天中显示这条（共享媒体里打开时提供） */
   onShowInChat?: (id: number) => void
 }
 
@@ -53,13 +52,8 @@ function slideOf({ msg, name }: LightboxItem): Slide {
   return { src: file, width: m?.w, height: m?.h, description, ...shared }
 }
 
-/** 两次点按的间隔：短于它算双击（交给缩放插件），不切换界面 */
 const DOUBLE_TAP = 280
 
-/**
- * 点按图片或空白处显示/隐藏界面（同 iOS 照片）。拖动、双击缩放和点按控件不算。
- * 监听挂在灯箱根节点上，灯箱关闭时随之移除。
- */
 function useTapToggle(root: HTMLElement | null, toggle: () => void) {
   const latest = useRef(toggle)
   latest.current = toggle
@@ -95,7 +89,6 @@ function useTapToggle(root: HTMLElement | null, toggle: () => void) {
   }, [root])
 }
 
-/** 顶部：返回按钮 + 标题胶囊（发送者、时间、第几张），同 iOS 27 照片 */
 function TopBar({ items }: { items: LightboxItem[] }) {
   const { currentIndex } = useLightboxState()
   const { close } = useController()
@@ -119,10 +112,6 @@ function TopBar({ items }: { items: LightboxItem[] }) {
   )
 }
 
-/**
- * 全屏看图（yet-another-react-lightbox）：左右滑动切换、双指/双击/滚轮缩放、下拉关闭、键盘左右键，
- * 视频、说明文字、分享、下载都用官方插件；外观是 iOS 27 照片的样式（Liquid Glass 按钮、点按隐藏界面）。
- */
 export function Lightbox({ items, index, onClose, onIndex, onShowInChat }: Props) {
   useCloseWhenInactive(true, onClose)
   const slides = useMemo(() => items.map(slideOf), [items])

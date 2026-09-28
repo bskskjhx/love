@@ -1,6 +1,5 @@
 import { filesize } from 'filesize'
 
-/** 所有日期都按存档配置的时区展示，保证与日历索引一致 */
 
 let timeZone = 'Asia/Shanghai'
 const formatters = new Map<string, Intl.DateTimeFormat>()
@@ -12,7 +11,6 @@ export function setTimeZone(tz: string) {
     formatters.clear()
     offsets.clear()
   } catch {
-    /* 无效时区时保持默认 */
   }
 }
 
@@ -22,7 +20,7 @@ interface Parts {
   d: number
   hh: string
   mm: string
-  wd: number // 0 = 周日
+  wd: number
 }
 
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六']
@@ -45,10 +43,6 @@ function fmt() {
   return f
 }
 
-/**
- * formatToParts 很慢，而消息分组要对全部消息取日期。时区偏移只在整 15 分钟处变化（夏令时切换都落在这些时刻），
- * 所以每 15 分钟只查一次偏移，其余用 UTC 运算，几万条消息也很快
- */
 const offsets = new Map<number, number>()
 
 function offsetAt(ts: number): number {
@@ -83,7 +77,6 @@ export function timeOf(ts: number): string {
 
 const now = () => Math.floor(Date.now() / 1000)
 
-/** 日期分隔条：今天 / 昨天 / 3月5日 星期二 / 2023年3月5日 */
 export function dayLabel(ts: number): string {
   const p = parts(ts)
   const key = dayKey(ts)
@@ -94,7 +87,6 @@ export function dayLabel(ts: number): string {
   return `${p.y}年${md}`
 }
 
-/** 列表里的时间：今天显示时刻，一周内显示星期，否则显示日期 */
 export function shortDate(ts: number): string {
   const p = parts(ts)
   const n = now()

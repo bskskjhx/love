@@ -1,6 +1,5 @@
 import type { ChatSummary, Message, Service, User, Users } from './types'
 
-/** 匿名管理员以群组身份发言：保证群组自身有名字和头像（兼容旧存档） */
 export function withChat(users: Users, chat: ChatSummary): Users {
   const key = String(chat.id)
   const cur = users[key]
@@ -9,11 +8,9 @@ export function withChat(users: Users, chat: ChatSummary): Users {
 
 export interface SenderTitle {
   text: string
-  /** 匿名管理员和所有者为紫色，其他管理员为绿色 */
   owner: boolean
 }
 
-/** 名字旁显示的头衔：匿名管理员用消息签名，其余用管理员头衔 */
 export function senderTitle(m: Message, users: Users, chatId: number): SenderTitle | undefined {
   if (m.from == null) return undefined
   if (m.from === chatId) return { text: m.sig || users[String(chatId)]?.title || '匿名管理员', owner: true }
@@ -22,7 +19,6 @@ export function senderTitle(m: Message, users: Users, chatId: number): SenderTit
 
 export function userTitle(u: User | undefined): SenderTitle | undefined {
   if (!u?.title) return undefined
-  // 旧存档没有 role 字段，按默认头衔判断
   const owner = u.role ? u.role === 'owner' : u.title === '所有者' || u.title === '群主'
   return { text: u.title, owner }
 }
@@ -107,7 +103,6 @@ export function serviceText(svc: Service, actor: string, users?: Users, pinned?:
   }
 }
 
-/** 一行消息预览 */
 export function previewOf(m: Message, users?: Users): string {
   if (m.svc) return serviceText(m.svc, userName(users, m.from), users, m.reply?.text)
   const label = mediaLabel(m)
@@ -116,7 +111,6 @@ export function previewOf(m: Message, users?: Users): string {
   return text || label || (m.media?.type === 'webpage' ? m.media.url ?? '' : '')
 }
 
-/** 用户名配色（Telegram 风格的 7 色） */
 export const PEER_COLORS: [string, string][] = [
   ['#FF885E', '#FF516A'],
   ['#FFCD6A', '#FFA85C'],

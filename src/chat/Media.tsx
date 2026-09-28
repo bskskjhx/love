@@ -13,7 +13,6 @@ import { LottieSticker } from './LottieSticker'
 
 export const MEDIA_MAX_W = 320
 
-/** 按原始宽高计算显示尺寸（在加载前就占好位置，避免滚动跳动） */
 export function fitBox(w = 1, h = 1, maxW = MEDIA_MAX_W, maxH = 400, minW = 150): { w: number; h: number } {
   let W = maxW
   let H = (W * h) / w
@@ -25,17 +24,14 @@ export function fitBox(w = 1, h = 1, maxW = MEDIA_MAX_W, maxH = 400, minW = 150)
   return { w: Math.round(W), h: Math.round(H) }
 }
 
-/** 宽度随屏幕收缩，高度按比例 */
 function boxStyle(box: { w: number; h: number }): CSSProperties {
   return { width: `min(${box.w}px, 68vw)`, aspectRatio: `${box.w} / ${box.h}` }
 }
 
-/** 需要贴满气泡的媒体（图片/视频） */
 export function isVisual(m?: Media): boolean {
   return !!m && (m.type === 'photo' || m.type === 'video' || m.type === 'gif')
 }
 
-/** 不带气泡背景显示的媒体 */
 export function isBare(m?: Media): boolean {
   return !!m && (m.type === 'sticker' || m.type === 'round' || m.type === 'dice')
 }
@@ -106,7 +102,6 @@ export function Photo({ msg, onOpen, box }: { msg: Message; onOpen?: (id: number
   )
 }
 
-/** 省流量模式下未加载的媒体：模糊缩略图 + 下载按钮 + 大小 */
 function SaverCover({ media, label }: { media: Media; label?: string }) {
   return (
     <span className="absolute inset-0 flex items-center justify-center bg-fill2">
@@ -174,7 +169,6 @@ function Video({ media, fill }: { media: Media; fill?: boolean }) {
   }
   const src = dataUrl(media.file)
   const poster = media.thumb ? dataUrl(media.thumb) : undefined
-  // 自动播放：GIF 与视频分别受设置控制，省流量模式下都不自动加载；只在屏幕内播放
   const auto = !prefs.dataSaver && (gif ? prefs.autoplayGif : prefs.autoplayVideo)
   if (gif && (auto || load)) {
     return <AutoVideo src={src} poster={poster} style={style} active={inView} viewRef={viewRef} />
@@ -209,7 +203,6 @@ function Video({ media, fill }: { media: Media; fill?: boolean }) {
   )
 }
 
-/** 自动循环播放的静音视频，离开屏幕即暂停 */
 function AutoVideo({ src, poster, style, active, viewRef, className = 'block bg-black object-cover' }: { src: string; poster?: string; style?: CSSProperties; active: boolean; viewRef: (el: HTMLElement | null) => void; className?: string }) {
   const ref = useRef<HTMLVideoElement | null>(null)
   const setRef = useCallback(
@@ -413,7 +406,6 @@ function Geo({ media }: { media: Media }) {
   )
 }
 
-/** 除图片/相册外的所有媒体 */
 export function MediaBody({ msg, chatId = 0, name = '' }: { msg: Message; chatId?: number; name?: string }) {
   const media = msg.media
   if (!media) return null

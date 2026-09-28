@@ -4,15 +4,10 @@ import { userName } from './text'
 import { getPrefs, setPrefs } from './prefs'
 import type { Message } from './types'
 
-/**
- * 全局语音/音频播放器（同官方）：同一时间只播一条，切换页面不中断；
- * 顶部迷你播放条、倍速（记忆）、语音播完自动连播同群下一条、锁屏/耳机控制（Media Session）。
- */
 export interface Track {
   chatId: number
   chatKey: string
   msg: Message
-  /** 发送者名字（迷你播放条与锁屏显示） */
   name: string
 }
 
@@ -79,7 +74,6 @@ export function toggle(track?: Track) {
   else a.pause()
 }
 
-/** 跳到 0–1 的位置；不是当前曲目时从该位置开始播放 */
 export function seek(frac: number, track?: Track) {
   const f = Math.min(1, Math.max(0, frac))
   if (track && !isCurrent(track)) {
@@ -110,7 +104,6 @@ export function stop() {
   if ('mediaSession' in navigator) navigator.mediaSession.metadata = null
 }
 
-/** 语音播完接着播同群的下一条语音（音乐则接下一首音乐），同官方 */
 async function onEnded() {
   const t = get().track
   if (!t) return
@@ -148,10 +141,8 @@ function mediaSession(t: Track) {
 
 const IDLE: PlayerState = { track: null, playing: false, time: 0, duration: 0, rate: 1 }
 
-/** 全局状态（迷你播放条用） */
 export const usePlayer = () => usePlayerStore()
 
-/** 某条消息的播放状态：不是当前曲目时返回固定对象，播放进度变化不会让其他气泡重渲染 */
 export function usePlayerFor(chatId: number, msgId: number): PlayerState {
   return usePlayerStore((state) => (state.track?.chatId === chatId && state.track.msg.id === msgId ? state : IDLE))
 }

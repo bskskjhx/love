@@ -107,7 +107,6 @@ export function ChatListPage() {
   useReadState()
   const needle = q.trim().toLowerCase()
   const matched = index?.chats.filter((c) => !needle || c.title.toLowerCase().includes(needle) || c.username?.toLowerCase().includes(needle)) ?? []
-  // 本机置顶的群排在最前（按置顶先后），其余保持存档顺序
   const pinRank = (id: number) => {
     const i = prefs.pinnedChats.indexOf(id)
     return i < 0 ? Infinity : i
@@ -287,7 +286,6 @@ function PinnedTile({ chat: c, unread, onMenu }: { chat: ChatSummary; unread: nu
   )
 }
 
-/** 同一时间只有一行处于左滑展开状态 */
 let closeOpenRow: (() => void) | null = null
 const ACTION_W = 76
 const ACTIONS_W = ACTION_W * 2 + 12
@@ -306,17 +304,14 @@ function ChatRow({ chat, pinned, unread, onMenu, menuOpen }: { chat: ChatSummary
     closeOpenRow = close
     setDx(-ACTIONS_W)
   }
-  // 左滑露出操作（@use-gesture）：锁定横向、左侧超出后阻尼，松手时超过四成就展开
   const bind = useDrag(
     ({ active, offset: [ox], movement: [mx] }) => {
-      // 没有位移的松手就是轻点：交给 onClick（展开时轻点只收起、不进群）
       if (!active && Math.abs(mx) < 3) return setDragging(false)
       setDragging(active)
       if (active) setDx(ox)
       else if (ox < -ACTIONS_W * 0.4) setOpen()
       else close()
     },
-    // 不用 filterTaps：它会在捕获阶段拦掉非触摸（鼠标）的点击
     { axis: 'x', enabled: !menuOpen, from: () => [dx, 0], bounds: { left: -ACTIONS_W, right: 0 }, rubberband: 0.3, pointer: { touch: true } },
   )
   const press = useLongPress((el) => {
@@ -332,7 +327,6 @@ function ChatRow({ chat, pinned, unread, onMenu, menuOpen }: { chat: ChatSummary
       transition={SPRING}
       className="relative overflow-hidden"
     >
-      {/* 左滑露出的操作（同官方） */}
       <div className="absolute inset-y-0 right-0 flex items-center gap-2 pr-1" style={{ width: ACTIONS_W }} aria-hidden={!open}>
         <SwipeAction
           label={pinned ? '取消置顶' : '置顶'}
@@ -497,7 +491,6 @@ function ToggleRow({ icon, label, checked, onChange }: { icon?: ReactNode; label
 
 const PREVIEW_LINES = ['早上好！这是字号预览 ☀️', '拖动下面的滑块调整消息文字大小']
 
-/** 聊天外观：字号滑块（带实时预览）与聊天背景，同官方“外观”设置 */
 function ChatAppearance() {
   const prefs = usePrefs()
   return (

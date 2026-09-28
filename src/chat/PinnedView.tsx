@@ -82,7 +82,6 @@ function PinnedPage({ meta, users, pins, handlers, onClose, onGo }: Omit<Props, 
 
   const more = shown < ordered.length
 
-  // Radix Dialog（非模态，就地渲染）：像一个推入的页面，Esc 返回；不锁定 body，保活隐藏时不会挡住点击
   return (
     <Dialog.Root open modal={false} onOpenChange={(o) => !o && !closing && onClose()}>
       <Dialog.Content
