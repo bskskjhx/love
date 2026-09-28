@@ -1,8 +1,3 @@
-"""scrape.py 的行为特征测试（不连接 Telegram）。
-
-    pip install -r scraper/requirements.txt
-    python -m unittest discover -s scraper/tests
-"""
 
 from __future__ import annotations
 
@@ -19,11 +14,11 @@ from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-import scrape  # noqa: E402
-from telethon import types  # noqa: E402
+import scrape
+from telethon import types
 
 UTC = timezone.utc
-scrape.log.setLevel(logging.CRITICAL)  # 预期内的失败日志不刷屏
+scrape.log.setLevel(logging.CRITICAL)
 
 
 def run(coro):
@@ -227,13 +222,12 @@ class ChunkStoreTest(TmpDir):
 
 
 class FakeArchiver(scrape.Archiver):
-    """不连 Telegram：头像下载直接跳过。"""
 
     def __init__(self, data: Path, **cfg):
         client = mock.MagicMock()
         super().__init__(client, {**scrape.DEFAULT_CONFIG, "convertVoice": False, **cfg}, data)
 
-    async def ensure_avatar(self, entity, record):  # noqa: D401
+    async def ensure_avatar(self, entity, record):
         record.setdefault("_avatar_checked", True)
 
 
@@ -475,7 +469,6 @@ class ArchiverTest(TmpDir):
 
 
 class FakeClient:
-    """archive_chat 用到的 TelegramClient 接口的最小替身。"""
 
     def __init__(self, entity, history, recent=None, pins=(), fail_full=True, fail_on_iter=None):
         self.entity = entity
@@ -546,10 +539,9 @@ class ArchiveChatTest(TmpDir):
         chunk0 = json.loads((cdir / "messages" / "0.json").read_text("utf-8"))
         self.assertEqual(chunk0[1]["reply"], {"id": 1, "from": 5, "text": "first"})
         chunk1 = json.loads((cdir / "messages" / "1.json").read_text("utf-8"))
-        self.assertEqual(chunk1[1]["reply"], {"id": 999})  # 被回复的消息拿不到时不补预览
+        self.assertEqual(chunk1[1]["reply"], {"id": 999})
         self.assertEqual(client.calls, ["GetFullChannelRequest"])
 
-        # 第二次：最近消息有编辑，新增一条
         edited = message(2, "reply edited", from_id=types.PeerUser(6), reply_to=types.MessageReplyHeader(reply_to_msg_id=1))
         recent = {1: None, 2: edited, 3: hist[2], 4: hist[3]}
         client2 = FakeClient(chat, hist + [message(5, "new", from_id=types.PeerUser(5))], recent=recent)

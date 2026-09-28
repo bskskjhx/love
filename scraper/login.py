@@ -1,11 +1,3 @@
-"""把固定的 Telethon .session 文件转换成 StringSession，填入 GitHub Secret `TG_SESSION`。
-
-    pip install -r scraper/requirements.txt
-    python scraper/login.py
-
-默认读取 SESSION_FILE；也可以用环境变量 TG_SESSION_FILE 覆盖。
-提供 TG_API_ID / TG_API_HASH（环境变量或按提示输入）时会连接 Telegram 验证会话是否有效。
-"""
 
 import asyncio
 import os
@@ -21,7 +13,6 @@ SESSION_FILE = Path(os.environ.get("TG_SESSION_FILE") or r"C:\Users\luna\Downloa
 
 
 def load_string_session(path: Path) -> str:
-    """在临时副本上读取，避免 Telethon 改写原始 .session 文件。"""
     if not path.exists():
         sys.exit(f"找不到 session 文件：{path}")
     with tempfile.TemporaryDirectory() as tmp:

@@ -1,14 +1,3 @@
-"""Telegram 群聊增量抓取器。
-
-读取 scraper/config.json（以及环境变量），把消息、用户资料、头像和媒体
-按块写入 data/ 目录，供前端静态站点读取。
-
-环境变量：
-    TG_API_ID, TG_API_HASH, TG_SESSION  必填，TG_SESSION 由 login.py 生成
-    TG_CHATS          可选，逗号分隔的额外群组（@username、t.me 链接或数字 id）
-    DATA_DIR          可选，默认为仓库根目录下的 data/
-    MAX_RUNTIME_MIN   可选，单次运行抓取新消息的时间预算（分钟），默认 40
-"""
 
 from __future__ import annotations
 
@@ -107,7 +96,6 @@ MEDIA_LABELS = {
 }
 
 
-# --------------------------------------------------------------------------- utils
 
 
 def load_config() -> dict[str, Any]:
@@ -134,12 +122,10 @@ MEDIA_OLD_PATH = re.compile(r'(chats/-?\d+/media/\d{4}-\d{2})/((\d+)[^"/\\]*")')
 
 
 def media_bucket(msg_id: int) -> int:
-    """同一个月的媒体再按消息 id 分组（每组最多 200 条消息），单个目录不超过 GitHub 网页的 1000 个文件上限"""
     return msg_id // MEDIA_BUCKET * MEDIA_BUCKET
 
 
 def migrate_media_layout(data: Path) -> None:
-    """把旧版 media/<月>/<id>.* 挪进 media/<月>/<分组>/，并改写消息里的路径；可重复执行"""
     moved = 0
     for month_dir in data.glob("chats/*/media/*"):
         if not month_dir.is_dir():
@@ -164,7 +150,6 @@ def migrate_media_layout(data: Path) -> None:
 
 
 def write_text_atomic(path: Path, text: str) -> None:
-    """先写临时文件再替换，中途被打断也不会留下半个文件。"""
     tmp = path.with_suffix(path.suffix + ".tmp")
     tmp.write_text(text, "utf-8")
     tmp.replace(path)
@@ -187,7 +172,6 @@ def _without_stamp(d: dict[str, Any]) -> dict[str, Any]:
 
 
 def write_json_stamped(path: Path, data: dict[str, Any]) -> None:
-    """只有内容真正变化时才刷新 updatedAt，避免每小时产生空提交。"""
     old = read_json(path, {})
     if old and _without_stamp(old) == _without_stamp(data) and "updatedAt" in old:
         data["updatedAt"] = old["updatedAt"]
@@ -197,7 +181,6 @@ def write_json_stamped(path: Path, data: dict[str, Any]) -> None:
 
 
 def write_lines_json(path: Path, items: list[Any]) -> None:
-    """数组每项一行，git diff 更友好。"""
     path.parent.mkdir(parents=True, exist_ok=True)
     body = ",\n".join(json.dumps(i, ensure_ascii=False, separators=(",", ":")) for i in items)
     write_text_atomic(path, "[\n" + body + "\n]\n")
@@ -208,7 +191,6 @@ def ts(dt: datetime | None) -> int | None:
 
 
 def text_of(v: Any) -> str:
-    """兼容 TextWithEntities 与 str。"""
     return getattr(v, "text", v) or ""
 
 
@@ -227,7 +209,6 @@ def display_name(entity: Any) -> str:
 
 
 def username_of(entity: Any) -> str | None:
-    """主用户名；没有时取第一个启用的附加用户名（Fragment 收藏用户名）。"""
     username = getattr(entity, "username", None)
     if not username and getattr(entity, "usernames", None):
         username = next((u.username for u in entity.usernames if u.active), None)
@@ -235,7 +216,6 @@ def username_of(entity: Any) -> str | None:
 
 
 def coords(geo: Any) -> dict[str, float | None]:
-    """GeoPointEmpty 没有坐标，记为 None。"""
     return {"lat": getattr(geo, "lat", None), "lng": getattr(geo, "long", None)}
 
 
@@ -255,14 +235,12 @@ def preview_text(m: dict[str, Any], limit: int = 120) -> str:
     return s[:limit]
 
 
-# --------------------------------------------------------------------------- storage
 
 
 WAVE_POINTS = 48
 
 
 def waveform_of(doc: Any) -> list[int] | None:
-    """语音波形：Telegram 用 5 bit 打包，解码后重采样到固定点数（0–31）。"""
     for a in getattr(doc, "attributes", None) or []:
         if isinstance(a, types.DocumentAttributeAudio) and a.waveform:
             raw = list(utils.decode_waveform(a.waveform))
@@ -276,7 +254,6 @@ def waveform_of(doc: Any) -> list[int] | None:
 
 
 def entities_of(msg: types.Message) -> list[list[Any]]:
-    """文字格式：[类型, offset, length, 附加值?]，不认识的类型丢弃。"""
     ents = []
     for e in msg.entities or []:
         t = ENTITY_TYPES.get(type(e))
@@ -296,7 +273,6 @@ def entities_of(msg: types.Message) -> list[list[Any]]:
 
 
 def reactions_of(msg: types.Message) -> list[list[Any]]:
-    """表情回应：普通 emoji 与付费星星；自定义表情无法展示，丢弃。"""
     reacts: list[list[Any]] = []
     if msg.reactions and msg.reactions.results:
         for r in msg.reactions.results:
@@ -329,7 +305,6 @@ def poll_info(media: types.MessageMediaPoll) -> dict[str, Any]:
 
 
 def document_kind(msg: types.Message) -> str:
-    """文档的展示类型；判断顺序有意义（如 GIF 也是 video，圆形视频也是 video）。"""
     if msg.sticker:
         return "sticker"
     if msg.gif:
@@ -346,7 +321,6 @@ def document_kind(msg: types.Message) -> str:
 
 
 class ChunkStore:
-    """按 id 升序分块存储消息，每块最多 chunk_size 条。"""
 
     def __init__(self, chat_dir: Path, meta: dict[str, Any], chunk_size: int):
         self.dir = chat_dir / "messages"
@@ -432,7 +406,6 @@ class ChunkStore:
         self.dirty.clear()
 
 
-# --------------------------------------------------------------------------- scraper
 
 
 class Shared:
@@ -469,14 +442,13 @@ class Archiver:
             task.add_done_callback(lambda _: self.shared.inflight.pop(key, None))
         return await task
 
-    # ---- avatars
 
     async def ensure_avatar(self, entity: Any, record: dict[str, Any]) -> None:
         photo = getattr(entity, "photo", None)
         photo_id = getattr(photo, "photo_id", None)
         if not photo_id:
             if getattr(entity, "min", False):
-                return  # min 实体不带完整头像信息，保留已有头像
+                return
             if record.get("avatar"):
                 self._rm(record["avatar"])
             record.pop("avatar", None)
@@ -504,13 +476,11 @@ class Archiver:
     def _rm(self, rel: str) -> None:
         try:
             (self.data / rel).unlink()
-        except OSError:  # 含 FileNotFoundError
+        except OSError:
             pass
 
-    # ---- users
 
     def sender_id_of(self, msg: Any) -> int | None:
-        """超级群里匿名管理员发言时 from_id 为空（sender_id 为 None），发送者就是群组本身。"""
         if msg.sender_id is not None:
             return msg.sender_id
         chat = self.chat
@@ -519,7 +489,6 @@ class Archiver:
         return None
 
     def sender_of(self, msg: Any) -> Any:
-        """匿名管理员以群组身份发言，sender 可能解析不到，此时用群组本身。"""
         if msg.sender is not None:
             return msg.sender
         chat = self.chat
@@ -528,7 +497,6 @@ class Archiver:
         return None
 
     async def admin_titles(self, entity: Any, users: dict[str, Any]) -> None:
-        """记录管理员头衔：自定义头衔，否则为“所有者”/“管理员”。"""
         titles: dict[str, tuple[str, str]] = {}
         anon_titles: list[str] = []
         try:
@@ -545,7 +513,6 @@ class Archiver:
         except (RPCError, ValueError, TypeError) as e:
             self.log.warning("   获取管理员列表失败，保留原有头衔: %s", e)
             return
-        # 匿名管理员消息没有签名时显示的头衔：只有一位匿名管理员时就是其头衔
         admins = len(titles)
         if getattr(entity, "megagroup", False):
             chat_key = str(utils.get_peer_id(entity))
@@ -584,7 +551,6 @@ class Archiver:
         await self.ensure_avatar(entity, rec)
 
     async def fetch_profiles(self, users: dict[str, Any]) -> None:
-        """补全个人简介：每次最多请求 maxProfilesPerRun 位，超过 profileRefreshDays 天的才刷新。"""
         limit = int(self.cfg["maxProfilesPerRun"])
         if limit <= 0:
             return
@@ -595,7 +561,6 @@ class Archiver:
             for k, rec in users.items()
             if not rec.get("chat") and not rec.get("deleted") and k.lstrip("-").isdigit() and int(k) > 0 and rec.get("bioAt", 0) < stale
         ]
-        # 从没取过的优先，其次是发言多的
         todo.sort(key=lambda kv: (kv[1].get("bioAt", 0), -kv[1].get("count", 0)))
         sem = asyncio.Semaphore(max(1, int(self.cfg["profileConcurrency"])))
         stop = False
@@ -609,7 +574,6 @@ class Archiver:
                 try:
                     full = await self.client(GetFullUserRequest(int(key)))
                 except ValueError:
-                    # 本次会话里没见过这个用户，拿不到 access_hash，下个周期再试
                     rec["bioAt"] = now
                     return
                 except RPCError as e:
@@ -629,7 +593,6 @@ class Archiver:
         if done:
             self.log.info("   更新个人简介 %d 位", done)
 
-    # ---- media
 
     async def media_info(self, msg: types.Message, chat_dir_rel: str) -> dict[str, Any] | None:
         media = msg.media
@@ -664,7 +627,6 @@ class Archiver:
         if isinstance(media, (types.MessageMediaGeo, types.MessageMediaGeoLive)):
             return {"type": "geo", **coords(media.geo)}
         if isinstance(media, types.MessageMediaContact):
-            # 出于隐私考虑不保存电话号码
             return {"type": "contact", "name": join_name(media.first_name, media.last_name)}
         if isinstance(media, types.MessageMediaDice):
             return {"type": "dice", "emoji": media.emoticon, "value": media.value}
@@ -698,7 +660,6 @@ class Archiver:
         if t == "sticker":
             info["emoji"] = f.emoji or ""
             if f.mime_type == "application/x-tgsticker":
-                # .tgs 是 gzip 压缩的 Lottie 动画，前端按需解压播放
                 info["animated"] = True
                 await self.download(msg, info, chat_dir_rel, ".tgs")
                 return info
@@ -776,7 +737,6 @@ class Archiver:
                 self.log.debug("缩略图下载失败 msg=%s: %s", msg.id, e)
                 return None
 
-    # ---- messages
 
     @staticmethod
     def service_info(msg: types.MessageService) -> dict[str, Any]:
@@ -843,7 +803,6 @@ class Archiver:
         return m
 
     async def _serialize_content(self, msg: types.Message, m: dict[str, Any], users: dict[str, Any], chat_dir_rel: str) -> None:
-        """普通消息的正文、媒体和各种附加信息，按固定顺序写入 m（键顺序即 JSON 中的顺序）。"""
         if msg.message:
             m["text"] = msg.message
         ents = entities_of(msg)
@@ -875,13 +834,12 @@ class Archiver:
     def _serialize_topic_and_reply(self, msg: Any, m: dict[str, Any]) -> None:
         rt = msg.reply_to
         if getattr(self.chat, "forum", False):
-            # 论坛话题：话题 id 即创建话题的服务消息 id，未在话题内的消息属于 General（1）
             if isinstance(msg, types.MessageService) and isinstance(msg.action, types.MessageActionTopicCreate):
                 m["topic"] = msg.id
             elif isinstance(rt, types.MessageReplyHeader) and rt.forum_topic:
                 m["topic"] = rt.reply_to_top_id or rt.reply_to_msg_id
                 if not rt.reply_to_top_id:
-                    rt = None  # 只是发在话题里，并不是回复某条消息
+                    rt = None
             else:
                 m["topic"] = 1
         if isinstance(rt, types.MessageReplyHeader) and rt.reply_to_msg_id:
@@ -891,7 +849,6 @@ class Archiver:
             if getattr(rt, "quote_text", None):
                 m["reply"]["quote"] = rt.quote_text[:200]
 
-    # ---- chat
 
     async def chat_info(self, entity: Any) -> dict[str, Any]:
         info: dict[str, Any] = {
@@ -953,21 +910,15 @@ class Archiver:
         try:
             if isinstance(entity, (types.Channel, types.Chat)) and meta.get("type") != "channel":
                 await self.admin_titles(entity, users)
-            # 1) 刷新最近的消息（编辑、表情回应、浏览数）
             await self.refresh_recent(entity, store, users, chat_dir_rel, missing_replies)
-            # 2) 增量抓取新消息
             await self.fetch_new(entity, store, meta, users, replies, chat_dir_rel, missing_replies)
-            # 3) 补全不在存档中的被回复消息预览
             if missing_replies:
                 await self.fetch_missing_replies(entity, store, missing_replies, users, chat_dir_rel)
-            # 4) 置顶消息与论坛话题
             await self.fetch_pins(entity, meta)
             if meta.get("forum"):
                 await self.fetch_topics(entity, meta)
-            # 5) 个人简介
             await self.fetch_profiles(users)
         finally:
-            # 中途出错（含超时、网络中断）也保存已抓到的进度
             self.save_chat(chat_dir, meta, store, users, replies)
         return meta
 
@@ -978,7 +929,6 @@ class Archiver:
         if not recent:
             return
         fetched = await self.client.get_messages(entity, ids=recent)
-        # 已被删除的消息（None）在存档中保留
         serialized = await asyncio.gather(*(self.serialize(msg, users, chat_dir_rel) for msg in fetched if msg is not None))
         changed = 0
         for m in serialized:
@@ -988,7 +938,7 @@ class Archiver:
             old = store.get(m["id"]) or {}
             r = m.get("reply")
             if r and "text" not in r and "text" in old.get("reply", {}):
-                m["reply"] = old["reply"]  # 之前通过 API 补全过的预览
+                m["reply"] = old["reply"]
                 missing_replies.discard(r["id"])
             if store.replace(m):
                 changed += 1
@@ -1014,7 +964,7 @@ class Archiver:
                     entity, min_id=store.last_id, reverse=True, limit=int(self.cfg["maxMessagesPerRun"]) or None, wait_time=0
                 ):
                     await queue.put(msg)
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 await queue.put(e)
             else:
                 await queue.put(end)
@@ -1073,7 +1023,6 @@ class Archiver:
     def save_chat(
         self, chat_dir: Path, meta: dict[str, Any], store: ChunkStore, users: dict[str, Any], replies: dict[str, list[int]]
     ) -> None:
-        """写回消息块，并据此更新 meta 里的统计与最后一条预览。"""
         store.save()
         last = store.last_message()
         meta["count"] = sum(c["count"] for c in store.chunks)
@@ -1087,7 +1036,6 @@ class Archiver:
         write_json(chat_dir / "users.json", users)
         write_json(chat_dir / "replies.json", replies)
 
-    # ---- 回复索引、置顶、话题
 
     @staticmethod
     def add_reply(replies: dict[str, list[int]], m: dict[str, Any]) -> None:
@@ -1098,7 +1046,6 @@ class Archiver:
                 lst.append(m["id"])
 
     def load_replies(self, chat_dir: Path, store: ChunkStore) -> dict[str, list[int]]:
-        """被回复 id → 回复它的消息 id 列表；文件不存在时扫描全部已存档消息重建一次。"""
         path = chat_dir / "replies.json"
         if path.exists():
             return read_json(path, {})
@@ -1222,7 +1169,7 @@ async def main() -> int:
             log.error("TG_SESSION 无效或已过期，请重新运行 scraper/login.py")
             return 2
         if any(isinstance(c, int) for c in cfg["chats"]):
-            await client.get_dialogs()  # 让数字 id 能被解析
+            await client.get_dialogs()
         shared = Shared(cfg)
         sem = asyncio.Semaphore(max(1, int(cfg["chatConcurrency"])))
 
@@ -1231,7 +1178,7 @@ async def main() -> int:
                 try:
                     meta = await Archiver(client, cfg, data_dir, shared).archive_chat(ref)
                     return True, meta["id"] if meta else None
-                except Exception:  # noqa: BLE001 单个群失败不影响其他群
+                except Exception:
                     log.exception("抓取 %s 失败", ref)
                     return False, None
 

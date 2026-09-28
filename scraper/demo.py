@@ -1,8 +1,3 @@
-"""生成演示数据（不需要 Telegram 账号），用于本地开发前端：
-
-    python scraper/demo.py          # 写入 .demo-data/
-    npm run dev:demo
-"""
 
 from __future__ import annotations
 
@@ -23,14 +18,12 @@ TZ = timezone(timedelta(hours=8))
 CHUNK = 500
 
 rnd = random.Random(42)
-# 新增演示内容用独立的随机数，保证原有演示群的消息 id 与内容不变
 rx = random.Random(7)
 VOICE_REL = "media/voice-demo.wav"
 TGS_REL = "media/sticker-demo.tgs"
 
 
 def write_voice() -> None:
-    """3 秒的起伏音调，当作演示语音/音频文件。"""
     path = OUT / VOICE_REL
     path.parent.mkdir(parents=True, exist_ok=True)
     rate = 8000
@@ -47,7 +40,6 @@ def write_voice() -> None:
 
 
 def write_tgs() -> None:
-    """一个旋转缩放的圆角方块 Lottie 动画，gzip 后即 Telegram 的 .tgs 格式。"""
     ease = {"i": {"x": [0.4], "y": [1]}, "o": {"x": [0.6], "y": [0]}}
     ease3 = {"i": {"x": [0.4, 0.4, 0.4], "y": [1, 1, 1]}, "o": {"x": [0.6, 0.6, 0.6], "y": [0, 0, 0]}}
     anim = {
@@ -78,7 +70,6 @@ def fake_wave() -> list[int]:
 
 
 def extras(cdir: Path, msgs: list[dict], meta: dict) -> None:
-    """抓取脚本新增的数据：回复索引、置顶列表。"""
     replies: dict[str, list[int]] = {}
     for m in msgs:
         r = m.get("reply")
@@ -129,7 +120,6 @@ def u16(s: str) -> int:
 
 
 def ents(text: str, *specs: tuple) -> list[list]:
-    """按子串生成实体，offset/length 使用 UTF-16 码元（与 Telegram 一致）。"""
     out = []
     for sub, t, *extra in specs:
         i = text.index(sub)
@@ -245,7 +235,6 @@ def make_chat(chat_id: int, title: str, username: str | None, about: str, n_msgs
             m["text"] = rnd.choice(PHRASES)
             m["edit"] = t + 120
         else:
-            # 匿名管理员：以群组身份发言，签名为管理员头衔
             m["from"] = chat_id
             m["text"] = rnd.choice(["请大家遵守群规 🙏", "本周活动安排已置顶", "已清理广告账号"])
             if rnd.random() < 0.7:
@@ -261,12 +250,10 @@ def make_chat(chat_id: int, title: str, username: str | None, about: str, n_msgs
         add(m)
         i += 1
 
-    # 管理员头衔
     for uid, rank in zip(members[:3], ["所有者", "管理员", "吉祥物"]):
         rec = chat_users.setdefault(str(uid), dict(users[uid], count=0))
         rec["title"], rec["role"] = rank, "owner" if rank == "所有者" else "admin"
 
-    # 分块
     chunks = []
     for n in range(0, len(msgs), CHUNK):
         part = msgs[n:n + CHUNK]
@@ -295,7 +282,6 @@ def make_chat(chat_id: int, title: str, username: str | None, about: str, n_msgs
 
 
 def make_forum(chat_id: int, users: dict) -> dict:
-    """开启了话题的超级群：每条消息带 topic，另有置顶、语音波形、音乐、代码块、折叠引用和动画贴纸。"""
     cdir = OUT / "chats" / str(chat_id)
     members = list(users)[:10]
     now = datetime.now(TZ).replace(minute=0, second=0, microsecond=0)
