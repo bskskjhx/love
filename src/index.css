@@ -298,7 +298,7 @@ form[data-press]:focus-within.is-pressed {
 }
 .press-row.pressing {
   transform: scale(0.97);
-  transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.3, 1);
+  transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.3, 1) 0.15s;
 }
 
 .ios-spinner {
@@ -378,7 +378,7 @@ form[data-press]:focus-within.is-pressed {
 }
 .jump-target.pressing {
   transform: scale(0.96);
-  transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.3, 1);
+  transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.3, 1) 0.15s;
 }
 
 .hit {
