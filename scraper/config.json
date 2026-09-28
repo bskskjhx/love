@@ -1,0 +1,12 @@
+{
+  "siteTitle": "群聊存档",
+  "timezone": "Asia/Shanghai",
+  "chats": ["@Ccccwmc","@jdksowpwj",1158333230],
+  "chunkSize": 500,
+  "maxMessagesPerRun": 0,
+  "refreshRecent": 200,
+  "downloadMedia": true,
+  "maxMediaSizeMB": 20,
+  "mediaTypes": ["photo", "sticker", "gif", "video", "round", "voice", "audio", "file"],
+  "convertVoice": true
+}

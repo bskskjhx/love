@@ -1,0 +1,66 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "demo",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "--mode",
+        "demo",
+        "--port",
+        "5178",
+        "--strictPort",
+        "--host",
+        "127.0.0.1"
+      ],
+      "port": 5178
+    },
+    {
+      "name": "preview",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "preview",
+        "--mode",
+        "demo",
+        "--port",
+        "5179",
+        "--strictPort",
+        "--host",
+        "127.0.0.1",
+        "--base",
+        "/tg-archive/"
+      ],
+      "port": 5179
+    },
+    {
+      "name": "dev",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "--port",
+        "5173",
+        "--strictPort",
+        "--host",
+        "127.0.0.1"
+      ],
+      "port": 5173
+    },
+    {
+      "name": "demo-local",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "--mode",
+        "demo",
+        "--port",
+        "5181",
+        "--strictPort",
+        "--host",
+        "127.0.0.1"
+      ],
+      "port": 5181
+    }
+  ]
+}

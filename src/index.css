@@ -1,0 +1,1225 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', 'Hiragino Sans GB', 'Helvetica Neue', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  --color-bg: var(--bg);
+  --color-grouped: var(--grouped);
+  --color-cell: var(--cell);
+  --color-cell-hi: var(--cell-hi);
+  --color-label: var(--label);
+  --color-label2: var(--label2);
+  --color-label3: var(--label3);
+  --color-sep: var(--sep);
+  --color-accent: var(--accent);
+  --color-fill: var(--fill);
+  --color-fill2: var(--fill2);
+  --color-bubble: var(--bubble);
+  --color-danger: var(--danger);
+
+  --animate-fade: fade-in 0.25s ease-out both;
+  --animate-fade-out: fade-out 0.25s ease-in both;
+  --animate-sheet: sheet-in 0.55s var(--spring-snappy) both;
+  --animate-sheet-out: sheet-out 0.28s cubic-bezier(0.4, 0, 1, 1) both;
+  --animate-pop: pop-in 0.6s var(--spring-bouncy) both;
+  --animate-toast: toast-in 0.6s var(--spring-bouncy) both;
+  --animate-toast-out: toast-out 0.25s cubic-bezier(0.4, 0, 1, 1) both;
+  --animate-page-push-in: page-push-in 0.55s var(--spring-smooth) both;
+  --animate-page-push-out: page-push-out 0.55s var(--spring-smooth) both;
+  --animate-page-pop-in: page-pop-in 0.5s var(--spring-smooth) both;
+  --animate-page-pop-out: page-pop-out 0.5s var(--spring-smooth) both;
+  --animate-menu-in: menu-in 0.6s var(--spring-bouncy) both;
+  --animate-search-page-in: fade-in 0.55s var(--spring-smooth) both;
+  --animate-search-page-out: fade-out 0.44s cubic-bezier(0.5, 0, 0.9, 0.6) 0.06s both;
+  --animate-search-under-out: search-under-out 0.55s var(--spring-smooth) both;
+  --animate-search-under-in: search-under-in 0.5s var(--spring-smooth) both;
+  --animate-menu-out: menu-out 0.22s cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+:root {
+  --spring-smooth: cubic-bezier(0.2, 0.9, 0.25, 1);
+  --spring-snappy: cubic-bezier(0.25, 1.1, 0.4, 1);
+  --spring-bouncy: cubic-bezier(0.3, 1.5, 0.5, 1);
+  --bg: #ffffff;
+  --grouped: #f2f2f7;
+  --cell: #ffffff;
+  --cell-hi: #d1d1d6;
+  --label: #000000;
+  --label2: rgba(60, 60, 67, 0.6);
+  --label3: rgba(60, 60, 67, 0.3);
+  --sep: rgba(60, 60, 67, 0.29);
+  --accent: #007aff;
+  --fill: rgba(118, 118, 128, 0.12);
+  --fill2: rgba(120, 120, 128, 0.2);
+  --bubble: #ffffff;
+  --danger: #ff3b30;
+  /* 聊天背景由设置决定（lib/prefs.ts 写入 --wp-*） */
+  --chat-bg: var(--wp-light, linear-gradient(160deg, #d9e6cf 0%, #c3d9c4 45%, #d9e2c3 100%));
+  --chat-pattern: var(--wp-pattern-light, none);
+  --nav-h: 56px;
+  --player-h: 0px;
+  --pinned-h: 0px;
+
+  /* Liquid Glass（iOS 27）：--glass-tint 0 = 通透，1 = 着色，由设置里的滑块控制 */
+  --glass-tint: 0.5;
+  --glass-rgb: 250 250 252;
+  --glass-alpha: calc(0.2 + var(--glass-tint) * 0.7);
+  --glass-sheen: rgb(255 255 255 / 0.32);
+  --glass-hi: rgb(255 255 255 / 0.95);
+  --glass-edge: rgb(0 0 0 / 0.13);
+  --glass-shadow: 0 8px 28px rgb(0 0 0 / 0.1), 0 1px 4px rgb(0 0 0 / 0.06);
+  --sheet-rgb: 242 242 247;
+  --edge-rgb: 255 255 255;
+  --r-card: 24px;
+  --r-sheet: 34px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --kb: 0px;
+}
+
+.dark {
+  --bg: #000000;
+  --grouped: #000000;
+  --cell: #1c1c1e;
+  --cell-hi: #3a3a3c;
+  --label: #ffffff;
+  --label2: rgba(235, 235, 245, 0.6);
+  --label3: rgba(235, 235, 245, 0.3);
+  --sep: rgba(84, 84, 88, 0.6);
+  --accent: #0a84ff;
+  --fill: rgba(118, 118, 128, 0.24);
+  --fill2: rgba(118, 118, 128, 0.36);
+  --bubble: #262628;
+  --danger: #ff453a;
+  --chat-bg: var(--wp-dark, linear-gradient(160deg, #0d1512 0%, #0b0f14 50%, #121212 100%));
+  --chat-pattern: var(--wp-pattern-dark, none);
+
+  --glass-rgb: 38 38 42;
+  --glass-sheen: rgb(255 255 255 / 0.07);
+  --glass-hi: rgb(255 255 255 / 0.24);
+  --glass-edge: rgb(0 0 0 / 0.65);
+  --glass-shadow: 0 8px 28px rgb(0 0 0 / 0.45), 0 1px 4px rgb(0 0 0 / 0.3);
+  --sheet-rgb: 28 28 30;
+  --edge-rgb: 0 0 0;
+}
+
+@supports (transition-timing-function: linear(0, 1)) {
+  :root {
+    --spring-smooth: linear(0, 0.024, 0.083, 0.16, 0.246, 0.333, 0.416, 0.495, 0.566, 0.63, 0.686, 0.735, 0.777, 0.813, 0.844, 0.87, 0.892, 0.911, 0.926, 0.939, 0.95, 0.959, 0.966, 0.973, 0.978, 0.982, 0.985, 0.988, 0.99, 0.992, 0.993, 0.995, 0.996, 0.996, 0.997, 0.998, 1);
+    --spring-snappy: linear(0, 0.023, 0.081, 0.161, 0.252, 0.348, 0.441, 0.53, 0.611, 0.684, 0.748, 0.803, 0.849, 0.887, 0.918, 0.943, 0.963, 0.978, 0.989, 0.998, 1.003, 1.007, 1.01, 1.011, 1.011, 1.011, 1.01, 1.009, 1.008, 1.007, 1.006, 1.005, 1.004, 1.004, 1.003, 1.002, 1);
+    --spring-bouncy: linear(0, 0.032, 0.111, 0.22, 0.342, 0.466, 0.584, 0.691, 0.783, 0.861, 0.923, 0.971, 1.006, 1.029, 1.044, 1.052, 1.054, 1.053, 1.048, 1.042, 1.036, 1.029, 1.023, 1.017, 1.012, 1.008, 1.004, 1.002, 1, 0.998, 0.998, 0.997, 0.997, 0.997, 0.997, 0.998, 1);
+  }
+}
+
+/* 系统“提高对比度”：玻璃更实、描边更深 */
+@media (prefers-contrast: more) {
+  :root {
+    --glass-alpha: 0.95;
+    --glass-edge: rgb(0 0 0 / 0.45);
+  }
+  .dark {
+    --glass-edge: rgb(255 255 255 / 0.35);
+  }
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  #root {
+    padding-left: var(--safe-left);
+    padding-right: var(--safe-right);
+  }
+
+  /* 全局禁用双击缩放的等待，任何可点元素（含带 onClick 的 div/图片）都没有点击延迟；双指缩放不受影响 */
+  html,
+  html,
+  body,
+  #root,
+  a,
+  button,
+  input,
+  label,
+  [role='button'],
+  [role='menuitem'] {
+    touch-action: manipulation;
+  }
+
+  body {
+    margin: 0;
+    background: var(--grouped);
+    color: var(--label);
+    font-family: var(--font-sans);
+    font-size: 17px;
+    line-height: 1.35;
+    overscroll-behavior-y: none;
+    -webkit-font-smoothing: antialiased;
+    /* 不出现浏览器原生的长按菜单/预览（iOS），右键菜单在 lib/nativeMenu.ts 中拦截 */
+    -webkit-touch-callout: none;
+  }
+
+  img,
+  a,
+  video {
+    -webkit-touch-callout: none;
+    -webkit-user-drag: none;
+  }
+
+  /* 触屏上长按不选中文字（否则会弹出系统的拷贝菜单），复制通过消息菜单完成；输入框照常可编辑 */
+  @media (hover: none) {
+    body {
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    input,
+    textarea,
+    [contenteditable='true'] {
+      -webkit-user-select: text;
+      user-select: text;
+      -webkit-touch-callout: default;
+    }
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: default;
+  }
+
+  a {
+    color: var(--accent);
+  }
+}
+
+.wp-swatch {
+  background: var(--sw-l);
+}
+.dark .wp-swatch {
+  background: var(--sw-d);
+}
+
+.chat-bg {
+  background: var(--chat-pattern), var(--chat-bg);
+  background-size: 180px 180px, auto;
+}
+
+/* ---- Liquid Glass 材质：半透明 + 模糊 + 顶部高光 + 深色描边（iOS 27） */
+.glass {
+  background:
+    linear-gradient(180deg, var(--glass-sheen), transparent 55%),
+    rgb(var(--glass-rgb) / var(--glass-alpha));
+  -webkit-backdrop-filter: blur(14px) saturate(190%);
+  backdrop-filter: blur(14px) saturate(190%);
+  box-shadow:
+    inset 0 1px 0.5px var(--glass-hi),
+    inset 0 -0.5px 0.5px rgb(255 255 255 / 0.12),
+    0 0 0 0.5px var(--glass-edge),
+    var(--glass-shadow);
+}
+
+/* 可按压的玻璃控件：按下时轻微放大变亮，像液体被按压 */
+.glass-press {
+  transition:
+    transform 0.6s var(--spring-bouncy),
+    filter 0.3s ease-out,
+    background-color 0.3s ease-out,
+    color 0.3s ease-out,
+    box-shadow 0.3s ease-out;
+}
+/* ---- iOS 27 按压放大（见 lib/press.ts）：只动 transform，由合成线程完成，长列表里也不掉帧 */
+[data-press] {
+  --press: 1.08;
+  transition: transform 0.55s var(--spring-bouncy);
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+[data-press].is-pressed {
+  transform: scale(var(--press));
+  transition: transform 0.32s var(--spring-bouncy);
+}
+.glass-press[data-press] {
+  --press: 1.1;
+  transition:
+    transform 0.55s var(--spring-bouncy),
+    background-color 0.3s ease-out,
+    color 0.3s ease-out,
+    box-shadow 0.3s ease-out;
+}
+@media (hover: hover) and (pointer: fine) {
+  .glass-press[data-press].is-pressed {
+    filter: brightness(1.1);
+  }
+}
+/* 正在输入的搜索框不再随点按缩放，避免移动光标、选字时抖动 */
+form[data-press]:focus-within.is-pressed {
+  transform: none;
+}
+/* 列表行：轻微放大并浮起一张内缩的圆角底板，像 iOS 27 的列表按压；底板只做 opacity 动画 */
+.press-row {
+  --press: 1.025;
+  position: relative;
+  isolation: isolate;
+}
+.press-row::before {
+  content: '';
+  position: absolute;
+  inset: 0 6px;
+  z-index: -1;
+  border-radius: 16px;
+  background: var(--cell-hi);
+  opacity: 0;
+  transition: opacity 0.35s ease-out;
+  pointer-events: none;
+}
+.press-row.is-pressed {
+  z-index: 1;
+}
+.press-row.is-pressed::before {
+  opacity: 1;
+  transition-duration: 0.1s;
+}
+.press-in {
+  --press: 0.95;
+}
+.press-row.pressing {
+  transform: scale(0.97);
+  transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.ios-spinner {
+  position: relative;
+  display: block;
+  width: var(--spin-size, 28px);
+  height: var(--spin-size, 28px);
+}
+.ios-spinner > i {
+  position: absolute;
+  left: calc(50% - 1.5px);
+  top: 0;
+  width: 3px;
+  height: 28%;
+  border-radius: 2px;
+  background: currentColor;
+  transform-origin: 50% calc(var(--spin-size, 28px) / 2);
+}
+.ios-spinner.is-spinning {
+  animation: ios-spin 0.8s steps(8) infinite;
+}
+@keyframes ios-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.list-ptr .ptr__pull-down {
+  top: calc(var(--safe-top) + var(--nav-h) + var(--player-h));
+  z-index: 1;
+}
+.list-ptr .ptr__pull-down .ios-spinner {
+  margin: 10px auto;
+}
+.list-ptr .ptr__children,
+.list-ptr .ptr__pull-down {
+  transition: transform 0.5s var(--spring-snappy);
+}
+.list-ptr.ptr--dragging .ptr__children,
+.list-ptr.ptr--dragging .ptr__pull-down {
+  transition: none;
+}
+.list-ptr.ptr--pull-down-treshold-breached .ptr__children {
+  transition: transform 0.12s ease-out;
+}
+
+.menu-backdrop {
+  background: rgb(0 0 0 / 0.12);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  backdrop-filter: blur(18px) saturate(140%);
+}
+.dark .menu-backdrop {
+  background: rgb(0 0 0 / 0.4);
+}
+
+.menu-item {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.menu-item:focus-visible {
+  outline: none;
+  background-color: var(--fill);
+}
+/* 滑动选择高亮条：在菜单项之间弹性跟随手指 */
+.menu-hl {
+  background-color: var(--fill2);
+  will-change: transform;
+  transition:
+    transform 0.38s var(--spring-snappy),
+    height 0.38s var(--spring-snappy),
+    opacity 0.18s ease-out;
+}
+
+.jump-target {
+  transition: transform 0.55s var(--spring-bouncy);
+}
+.jump-target.pressing {
+  transform: scale(0.96);
+  transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.hit {
+  position: relative;
+}
+.hit::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
+}
+.hit-sm {
+  position: relative;
+}
+.hit-sm::after {
+  content: '';
+  position: absolute;
+  inset: -5px -4px;
+}
+
+.glass-lite {
+  background:
+    linear-gradient(180deg, var(--glass-sheen), transparent 55%),
+    rgb(var(--glass-rgb) / calc(var(--glass-alpha) + 0.15));
+  box-shadow:
+    inset 0 1px 0.5px var(--glass-hi),
+    0 0 0 0.5px var(--glass-edge),
+    0 2px 8px rgb(0 0 0 / 0.08);
+}
+
+.glass-press:disabled {
+  transform: none;
+  filter: none;
+}
+
+header .glass {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* 弹出面板：更厚的玻璃 */
+.glass-sheet {
+  background:
+    linear-gradient(180deg, var(--glass-sheen), transparent 30%),
+    rgb(var(--sheet-rgb) / calc(0.72 + var(--glass-tint) * 0.26));
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0.5px var(--glass-hi),
+    0 0 0 0.5px var(--glass-edge),
+    0 18px 60px rgb(0 0 0 / 0.25);
+}
+
+/* 顶部滚动边缘：内容滚到栏下时逐渐模糊淡出，而不是一条分隔线 */
+.edge-top {
+  background: linear-gradient(180deg, rgb(var(--edge-rgb) / 0.55), rgb(var(--edge-rgb) / 0.2) 70%, transparent);
+  -webkit-backdrop-filter: blur(10px) saturate(160%);
+  backdrop-filter: blur(10px) saturate(160%);
+  -webkit-mask-image: linear-gradient(180deg, #000 60%, transparent);
+  mask-image: linear-gradient(180deg, #000 60%, transparent);
+}
+
+/* 系统“降低透明度”：所有玻璃变为实色 */
+@media (prefers-reduced-transparency: reduce) {
+  .glass,
+  .glass-sheet,
+  .edge-top {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .glass {
+    background: rgb(var(--glass-rgb));
+  }
+  .glass-sheet {
+    background: rgb(var(--sheet-rgb));
+  }
+  .edge-top {
+    background: rgb(var(--edge-rgb) / 0.95);
+  }
+}
+
+.is-transitioning .glass,
+.is-transitioning .edge-top,
+.chat-bg:has(> .pinned-view) > :not(.pinned-view) .glass,
+.chat-bg:has(> .pinned-view) > :not(.pinned-view) .edge-top,
+.glass-sheet.moving {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.is-transitioning .glass,
+.chat-bg:has(> .pinned-view) > :not(.pinned-view) .glass {
+  background: rgb(var(--glass-rgb) / 0.96);
+}
+.is-transitioning .edge-top,
+.chat-bg:has(> .pinned-view) > :not(.pinned-view) .edge-top {
+  background: rgb(var(--edge-rgb) / 0.9);
+}
+.glass-sheet.moving {
+  background: rgb(var(--sheet-rgb) / 0.97);
+}
+
+.hairline-b {
+  box-shadow: inset 0 -0.5px 0 var(--sep);
+}
+
+.page-hidden {
+  visibility: hidden;
+  content-visibility: hidden;
+  pointer-events: none;
+}
+
+.list-line {
+  box-shadow: inset 0 -0.5px 0 var(--sep);
+}
+.list-row:last-child > .list-line {
+  box-shadow: none;
+}
+
+.hairline-t {
+  box-shadow: inset 0 0.5px 0 var(--sep);
+}
+
+.scroller {
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* 消息列表手动管理滚动锚点 */
+.messages {
+  overflow-anchor: none;
+}
+
+.bubble-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  /* 设置里的消息字号（lib/prefs.ts） */
+  font-size: var(--msg-size, 16px);
+  line-height: 1.35;
+}
+
+/* 代码着色（highlight.js 的 hljs-* 类，配色取 Xcode 浅色 / 深色） */
+.code-block {
+  --hl-kw: #9b2393;
+  --hl-str: #c41a16;
+  --hl-num: #1c00cf;
+  --hl-com: #5d6c79;
+  --hl-type: #0b4f79;
+  --hl-fn: #326d74;
+  --hl-attr: #815f03;
+  --hl-meta: #643820;
+}
+.dark .code-block {
+  --hl-kw: #fc5fa3;
+  --hl-str: #fc6a5d;
+  --hl-num: #d0bf69;
+  --hl-com: #7f8c98;
+  --hl-type: #5dd8ff;
+  --hl-fn: #67b7a4;
+  --hl-attr: #fd8f3f;
+  --hl-meta: #fd8f3f;
+}
+.hljs-keyword,
+.hljs-literal,
+.hljs-selector-tag,
+.hljs-doctag {
+  color: var(--hl-kw);
+  font-weight: 600;
+}
+.hljs-string,
+.hljs-regexp,
+.hljs-template-string,
+.hljs-char\.escape,
+.hljs-addition {
+  color: var(--hl-str);
+}
+.hljs-number,
+.hljs-symbol,
+.hljs-bullet {
+  color: var(--hl-num);
+}
+.hljs-comment,
+.hljs-quote,
+.hljs-deletion {
+  color: var(--hl-com);
+  font-style: italic;
+}
+.hljs-type,
+.hljs-built_in,
+.hljs-class .hljs-title,
+.hljs-title.class_,
+.hljs-selector-class,
+.hljs-selector-id {
+  color: var(--hl-type);
+}
+.hljs-title,
+.hljs-title.function_,
+.hljs-section,
+.hljs-name {
+  color: var(--hl-fn);
+}
+.hljs-attr,
+.hljs-attribute,
+.hljs-variable,
+.hljs-property,
+.hljs-params,
+.hljs-template-variable {
+  color: var(--hl-attr);
+}
+.hljs-meta,
+.hljs-meta .hljs-keyword,
+.hljs-link {
+  color: var(--hl-meta);
+}
+.hljs-emphasis {
+  font-style: italic;
+}
+.hljs-strong {
+  font-weight: 700;
+}
+
+/* 折叠的引用：只露出前三行并渐隐 */
+.quote-folded {
+  max-height: calc(3 * 1.35em + 4px);
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(180deg, #000 55%, transparent);
+  mask-image: linear-gradient(180deg, #000 55%, transparent);
+}
+
+.spoiler {
+  border-radius: 4px;
+  background: var(--label3);
+  color: transparent;
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s;
+}
+.spoiler * {
+  color: transparent !important;
+}
+.spoiler.revealed {
+  background: var(--fill);
+  color: inherit;
+}
+.spoiler.revealed * {
+  color: inherit !important;
+}
+
+@media (hover: none) {
+  .no-touch-select {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+  .no-touch-select img,
+  .no-touch-select a,
+  .no-touch-select video {
+    -webkit-touch-callout: none;
+    -webkit-user-drag: none;
+  }
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+mark {
+  background: rgba(255, 204, 0, 0.45);
+  color: inherit;
+  border-radius: 3px;
+  padding: 0 1px;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes sheet-in {
+  from {
+    transform: translateY(105%);
+  }
+}
+
+@keyframes sheet-out {
+  to {
+    transform: translateY(105%);
+  }
+}
+
+/* 入场/退场只动 transform 与 opacity，交给合成线程；
+   对带 backdrop-filter 的玻璃元素做 filter 动画在手机上每帧都要重绘，容易掉帧 */
+@keyframes pop-in {
+  from {
+    transform: scale(0.86);
+    opacity: 0;
+  }
+  40% {
+    opacity: 1;
+  }
+}
+
+@keyframes pop-out {
+  to {
+    transform: scale(0.92);
+    opacity: 0;
+  }
+}
+
+@keyframes toast-in {
+  from {
+    transform: translateY(-28px) scale(0.8);
+    opacity: 0;
+  }
+  35% {
+    opacity: 1;
+  }
+}
+
+@keyframes toast-out {
+  to {
+    transform: translateY(-16px) scale(0.9);
+    opacity: 0;
+  }
+}
+
+@keyframes menu-in {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  35% {
+    opacity: 1;
+  }
+}
+
+@keyframes menu-out {
+  to {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+}
+
+/* 桌面端性能充裕，保留模糊入场 */
+@media (hover: hover) and (pointer: fine) {
+  @keyframes pop-in {
+    from {
+      transform: scale(0.86);
+      opacity: 0;
+      filter: blur(6px);
+    }
+    40% {
+      opacity: 1;
+      filter: none;
+    }
+  }
+
+  @keyframes menu-in {
+    from {
+      transform: scale(0.4);
+      opacity: 0;
+      filter: blur(8px);
+    }
+    35% {
+      opacity: 1;
+      filter: none;
+    }
+  }
+
+  @keyframes menu-out {
+    to {
+      transform: scale(0.6);
+      opacity: 0;
+      filter: blur(4px);
+    }
+  }
+}
+
+@keyframes page-push-in {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes page-push-out {
+  to {
+    transform: translateX(-30%);
+  }
+}
+
+@keyframes page-pop-in {
+  from {
+    transform: translateX(var(--pop-from, -30%));
+  }
+}
+
+.page-shade-in::after,
+.page-shade-out::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  background: #000;
+  pointer-events: none;
+}
+.page-shade-in::after {
+  animation: shade-in 0.55s var(--spring-smooth) both;
+}
+.page-shade-out::after {
+  animation: shade-out 0.5s var(--spring-smooth) both;
+}
+
+@keyframes shade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 0.1;
+  }
+}
+
+@keyframes shade-out {
+  from {
+    opacity: var(--shade-from, 0.1);
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes page-pop-out {
+  from {
+    transform: translateX(var(--swipe-x, 0px));
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.page-swipe-shade::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  background: #000;
+  pointer-events: none;
+  opacity: calc(0.1 * (1 - var(--swipe-p, 0)));
+}
+.page-swipe-settle::after {
+  transition: opacity 0.45s var(--spring-snappy);
+}
+
+.chat-bg:has(> .pinned-view) > :not(.pinned-view) {
+  animation: page-push-out 0.55s var(--spring-smooth) both;
+}
+.chat-bg:has(> .pinned-view.pinned-closing) > :not(.pinned-view) {
+  animation: page-pop-in 0.5s var(--spring-smooth) both;
+}
+.chat-bg:has(> .pinned-view)::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 39;
+  background: #000;
+  pointer-events: none;
+  animation: shade-in 0.55s var(--spring-smooth) both;
+}
+.chat-bg:has(> .pinned-view.pinned-closing)::after {
+  animation: shade-out 0.5s var(--spring-smooth) both;
+}
+
+.page-front {
+  box-shadow: -12px 0 32px rgb(0 0 0 / 0.14);
+}
+
+@media (min-width: 640px) {
+  .sm-pop {
+    animation: pop-in 0.6s var(--spring-bouncy) both;
+  }
+  .sm-pop-out {
+    animation: pop-out 0.2s cubic-bezier(0.4, 0, 1, 1) both;
+  }
+}
+
+.jump-hl {
+  animation: jump-glow 1.4s ease-out both;
+}
+
+.jump-hl .jump-target {
+  transform-origin: 30% 100%;
+  animation: jump-pop 0.75s both;
+}
+
+@keyframes jump-glow {
+  0% {
+    background-color: transparent;
+  }
+  12%,
+  35% {
+    background-color: color-mix(in srgb, var(--accent) 16%, transparent);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+@keyframes jump-pop {
+  0% {
+    transform: scale(1);
+    animation-timing-function: cubic-bezier(0.3, 0, 0.3, 1);
+  }
+  28% {
+    transform: scale(1.07);
+    animation-timing-function: cubic-bezier(0.3, 1.5, 0.5, 1);
+    animation-timing-function: linear(0, 0.032, 0.111, 0.22, 0.342, 0.466, 0.584, 0.691, 0.783, 0.861, 0.923, 0.971, 1.006, 1.029, 1.044, 1.052, 1.054, 1.053, 1.048, 1.042, 1.036, 1.029, 1.023, 1.017, 1.012, 1.008, 1.004, 1.002, 1, 0.998, 0.998, 0.997, 0.997, 0.997, 0.997, 0.998, 1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* 设置里的玻璃滑块 */
+/* ---- 搜索页进出（iOS 27）：搜索按钮原地展开成搜索框，关闭按钮弹出，筛选标签依次落下，结果上浮淡入；
+   退出时反向收回到右侧。只用 transform / opacity / 小面积 clip-path，手机上不掉帧 */
+@keyframes search-under-out {
+  to {
+    transform: scale(0.95);
+    opacity: 0.5;
+  }
+}
+@keyframes search-under-in {
+  from {
+    transform: scale(0.95);
+    opacity: 0.5;
+  }
+}
+@keyframes search-field-in {
+  from {
+    clip-path: inset(0 0 0 calc(100% - 44px) round 22px);
+    transform: translateX(28px);
+  }
+  to {
+    /* 终点略大于胶囊本身，不裁掉玻璃阴影 */
+    clip-path: inset(-12px round 34px);
+  }
+}
+@keyframes search-field-out {
+  from {
+    clip-path: inset(-12px round 34px);
+  }
+  to {
+    clip-path: inset(0 0 0 calc(100% - 44px) round 22px);
+    transform: translateX(28px);
+    opacity: 0;
+  }
+}
+@keyframes search-pop-in {
+  from {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+}
+@keyframes search-pop-out {
+  to {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+}
+@keyframes search-drop-in {
+  from {
+    transform: translateY(-10px) scale(0.9);
+    opacity: 0;
+  }
+}
+@keyframes search-rise-in {
+  from {
+    transform: translateY(16px);
+    opacity: 0;
+  }
+}
+@keyframes search-rise-out {
+  to {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+}
+
+.search-enter .se-row > form {
+  animation: search-field-in 0.62s var(--spring-snappy) both;
+}
+.search-enter .se-row > form > * {
+  animation: fade-in 0.3s ease-out 0.1s both;
+}
+.search-enter .se-row > button {
+  animation: search-pop-in 0.6s var(--spring-bouncy) 0.06s both;
+}
+.search-enter .se-chips > * {
+  animation: search-drop-in 0.55s var(--spring-snappy) both;
+}
+.search-enter .se-chips > :nth-child(1) {
+  animation-delay: 0.08s;
+}
+.search-enter .se-chips > :nth-child(2) {
+  animation-delay: 0.11s;
+}
+.search-enter .se-chips > :nth-child(3) {
+  animation-delay: 0.14s;
+}
+.search-enter .se-chips > :nth-child(4) {
+  animation-delay: 0.17s;
+}
+.search-enter .se-chips > :nth-child(n + 5) {
+  animation-delay: 0.2s;
+}
+.search-enter .se-body {
+  animation: search-rise-in 0.5s var(--spring-smooth) 0.1s both;
+}
+
+.search-leave .se-row > form {
+  animation: search-field-out 0.34s cubic-bezier(0.4, 0, 0.6, 1) both;
+}
+.search-leave .se-row > form > * {
+  animation: fade-out 0.14s ease-in both;
+}
+.search-leave .se-row > button {
+  animation: search-pop-out 0.26s cubic-bezier(0.4, 0, 1, 1) both;
+}
+.search-leave .se-chips > * {
+  animation: search-rise-out 0.22s cubic-bezier(0.4, 0, 1, 1) both;
+}
+.search-leave .se-body {
+  animation: search-rise-out 0.24s cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+/* ---- 图片查看器（yet-another-react-lightbox）换成 iOS 27 照片的外观：
+   浅色模式显示界面时白底，点按隐藏界面后黑底；按钮是 Liquid Glass 圆钮/胶囊，浮在图片上 */
+.ios-lb {
+  --yarl__color_backdrop: #000;
+  --yarl__color_button: var(--label2);
+  --yarl__fade_animation_duration: 0.3s;
+}
+html:not(.dark) .ios-lb.lb-on {
+  --yarl__color_backdrop: #fff;
+}
+.ios-lb .yarl__container {
+  transition: background-color 0.35s ease;
+}
+
+.ios-lb .lb-glass,
+.ios-lb .yarl__toolbar .yarl__button,
+.ios-lb .yarl__navigation_prev,
+.ios-lb .yarl__navigation_next,
+.ios-lb .yarl__slide_description_container {
+  color: var(--label);
+  background:
+    linear-gradient(180deg, var(--glass-sheen), transparent 55%),
+    rgb(var(--glass-rgb) / calc(var(--glass-alpha) + 0.1));
+  -webkit-backdrop-filter: blur(14px) saturate(190%);
+  backdrop-filter: blur(14px) saturate(190%);
+  box-shadow:
+    inset 0 1px 0.5px var(--glass-hi),
+    inset 0 -0.5px 0.5px rgb(255 255 255 / 0.12),
+    0 0 0 0.5px var(--glass-edge),
+    var(--glass-shadow);
+  filter: none;
+}
+@media (prefers-reduced-transparency: reduce) {
+  .ios-lb .lb-glass,
+  .ios-lb .yarl__toolbar .yarl__button,
+  .ios-lb .yarl__navigation_prev,
+  .ios-lb .yarl__navigation_next,
+  .ios-lb .yarl__slide_description_container {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: rgb(var(--glass-rgb));
+  }
+}
+
+/* 顶部：返回圆钮 + 标题胶囊（右侧占位保持居中） */
+.ios-lb .lb-top {
+  position: absolute;
+  inset: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: max(10px, var(--safe-top)) 12px 0;
+  pointer-events: none;
+}
+.ios-lb .lb-top > * {
+  pointer-events: auto;
+}
+.ios-lb .lb-circle {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+}
+.ios-lb .lb-title {
+  min-width: 0;
+  max-width: calc(100% - 120px);
+  padding: 6px 18px;
+  border-radius: 999px;
+  text-align: center;
+}
+
+/* 底部工具栏：左分享、中“在聊天中显示”、右存储 */
+.ios-lb .yarl__toolbar {
+  inset: auto 0 0;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px max(12px, var(--safe-bottom));
+  pointer-events: none;
+}
+.ios-lb .yarl__toolbar > * {
+  grid-column: 2;
+  pointer-events: auto;
+}
+.ios-lb .yarl__toolbar > [aria-label='分享'] {
+  grid-column: 1;
+  justify-self: start;
+}
+.ios-lb .yarl__toolbar > [aria-label='存储到本机'] {
+  grid-column: 3;
+  justify-self: end;
+}
+.ios-lb .yarl__toolbar .yarl__button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border-radius: 999px;
+  transition:
+    transform 0.55s var(--spring-bouncy),
+    opacity 0.25s ease;
+}
+.ios-lb .yarl__toolbar .yarl__button:active {
+  transform: scale(1.1);
+  transition-duration: 0.3s;
+}
+.ios-lb .yarl__toolbar .lb-pill {
+  width: auto;
+  gap: 7px;
+  padding: 0 18px;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+/* 说明文字：底部工具栏上方的玻璃卡片 */
+.ios-lb .yarl__slide_captions_container {
+  --yarl__slide_captions_container_background: none;
+  --yarl__slide_captions_container_padding: 0 16px;
+}
+/* 玻璃和内边距放在容器上：行数截断（line-clamp）只作用于文字本身，不会在内边距里露出半行 */
+.ios-lb .yarl__slide_description_container {
+  left: 16px;
+  right: 16px;
+  bottom: calc(max(12px, var(--safe-bottom)) + 60px);
+  width: fit-content;
+  max-width: min(calc(100% - 32px), 600px);
+  margin: 0 auto;
+  padding: 8px 14px;
+  border-radius: 18px;
+}
+.ios-lb .yarl__slide_description {
+  color: var(--label);
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+/* 左右切换：只在有鼠标的设备上显示（触屏用滑动，同 iOS） */
+.ios-lb .yarl__navigation_prev,
+.ios-lb .yarl__navigation_next {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin: 0 12px;
+  padding: 0;
+  border-radius: 999px;
+}
+.ios-lb .yarl__navigation_prev:disabled,
+.ios-lb .yarl__navigation_next:disabled {
+  opacity: 0;
+}
+@media (hover: none) {
+  .ios-lb .yarl__navigation_prev,
+  .ios-lb .yarl__navigation_next {
+    display: none;
+  }
+}
+
+/* 点按隐藏界面 */
+.ios-lb .lb-chrome,
+.ios-lb .yarl__toolbar,
+.ios-lb .yarl__slide_captions_container,
+.ios-lb .yarl__navigation_prev,
+.ios-lb .yarl__navigation_next {
+  transition:
+    opacity 0.25s ease,
+    translate 0.4s var(--spring-bouncy);
+}
+.ios-lb.lb-off .lb-chrome,
+.ios-lb.lb-off .yarl__toolbar,
+.ios-lb.lb-off .yarl__slide_captions_container,
+.ios-lb.lb-off .yarl__navigation_prev,
+.ios-lb.lb-off .yarl__navigation_next {
+  opacity: 0;
+  pointer-events: none;
+}
+.ios-lb.lb-off .lb-top {
+  translate: 0 -10px;
+}
+.ios-lb.lb-off .yarl__toolbar {
+  translate: 0 10px;
+}
