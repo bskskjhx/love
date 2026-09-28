@@ -30,7 +30,7 @@ interface Props extends ItemHandlers {
   replies?: number
 }
 
-export function peerStyle(id: number | null | undefined): CSSProperties {
+function peerStyle(id: number | null | undefined): CSSProperties {
   const [a, b] = PEER_COLORS[colorIndex(id ?? 0)]
   return { '--pc-light': b, '--pc-dark': a } as CSSProperties
 }
@@ -144,7 +144,7 @@ function Reactions({ m }: { m: Message }) {
   )
 }
 
-export const ServiceItem = memo(function ServiceItem({ m, users, onJump, highlighted }: { m: Message; users: Users; onJump: ItemHandlers['onJump']; highlighted: boolean }) {
+const ServiceItem = memo(function ServiceItem({ m, users, onJump, highlighted }: { m: Message; users: Users; onJump: ItemHandlers['onJump']; highlighted: boolean }) {
   const text = serviceText(m.svc!, userName(users, m.from), users, m.reply?.text)
   const clickable = m.svc!.type === 'pin' && m.reply
   return (

@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware'
 import { persistStorage } from './store'
 
 /** 本机偏好设置（对应 Telegram 设置里的外观、数据与存储等项），存在 localStorage */
-export interface Prefs {
+interface Prefs {
   /** 消息字号档位 0–6，默认 2（16px） */
   fontStep: number
   /** 聊天背景预设 key */

@@ -26,7 +26,7 @@ export function fitBox(w = 1, h = 1, maxW = MEDIA_MAX_W, maxH = 400, minW = 150)
 }
 
 /** 宽度随屏幕收缩，高度按比例 */
-export function boxStyle(box: { w: number; h: number }): CSSProperties {
+function boxStyle(box: { w: number; h: number }): CSSProperties {
   return { width: `min(${box.w}px, 68vw)`, aspectRatio: `${box.w} / ${box.h}` }
 }
 
@@ -156,7 +156,7 @@ function MediaTile({ msg, onOpen }: { msg: Message; onOpen: (id: number) => void
   return <div className="h-full w-full bg-fill2" />
 }
 
-export function Video({ media, fill }: { media: Media; fill?: boolean }) {
+function Video({ media, fill }: { media: Media; fill?: boolean }) {
   const [playing, setPlaying] = useState(false)
   const prefs = usePrefs()
   const [load, setLoad] = useState(false)

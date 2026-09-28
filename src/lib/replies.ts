@@ -12,7 +12,7 @@ const cache = new Map<number, Promise<ReplyIndex>>()
 const ready = new Map<number, ReplyIndex>()
 
 /** 抓取脚本生成的 replies.json；旧存档没有时在浏览器里扫描一遍构建 */
-export function loadReplies(meta: ChatMeta): Promise<ReplyIndex> {
+function loadReplies(meta: ChatMeta): Promise<ReplyIndex> {
   let p = cache.get(meta.id)
   if (!p) {
     p = fetch(dataUrl(`chats/${meta.id}/replies.json`), { cache: 'no-cache' })

@@ -3,7 +3,7 @@ import { parse } from 'regexparam'
 import { matchRoute } from 'wouter'
 import { useHashLocation } from 'wouter/use-hash-location'
 
-export type Route =
+type Route =
   | { name: 'home' }
   | { name: 'chat'; chat: string; msg?: number; topic?: number; all?: boolean }
   | { name: 'media'; chat: string; type?: string; from?: number }

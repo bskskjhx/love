@@ -10,7 +10,7 @@ export type Target =
   | { kind: 'bottom' }
   | { kind: 'msg'; id: number; align: 'center' | 'start' | 'offset'; offset?: number; flash?: boolean; unread?: boolean }
 
-export interface StoredPos {
+interface StoredPos {
   id?: number
   offset?: number
   bottom?: boolean

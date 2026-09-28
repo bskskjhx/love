@@ -8,7 +8,7 @@ import type { ChunkInfo, Message } from './types'
  * id = 读到的最新一条消息，n = 截至这条（含）存档里一共有多少条消息。
  * 未读数 = 当前消息总数 - n，不需要加载任何消息块就能算出，群列表角标可以直接用。
  */
-export interface ReadMark {
+interface ReadMark {
   id: number
   n: number
 }

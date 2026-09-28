@@ -5,7 +5,7 @@
 let transitionEnd = 0
 
 /** 转场动画时长（与 App 中 PageStack 的清理时间一致） */
-export const TRANSITION_MS = 600
+const TRANSITION_MS = 600
 
 export function markTransition() {
   transitionEnd = performance.now() + TRANSITION_MS

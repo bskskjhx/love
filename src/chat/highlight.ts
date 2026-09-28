@@ -5,7 +5,7 @@ type Hljs = typeof import('highlight.js/lib/common').default
 let loading: Promise<Hljs> | undefined
 const load = () => (loading ??= import('highlight.js/lib/common').then((m) => m.default))
 
-export function highlightWith(hljs: Hljs, code: string, lang?: string): string {
+function highlightWith(hljs: Hljs, code: string, lang?: string): string {
   const name = lang?.trim().toLowerCase()
   if (name && hljs.getLanguage(name)) return hljs.highlight(code, { language: name, ignoreIllegals: true }).value
   return hljs.highlightAuto(code).value

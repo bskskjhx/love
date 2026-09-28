@@ -3,7 +3,7 @@ import { getMeta, getUsers, peekChat, peekMeta, peekUsers, resolveChat } from '.
 import { withChat } from './text'
 import type { ChatMeta, Users } from './types'
 
-export interface ChatData {
+interface ChatData {
   meta: ChatMeta
   users: Users
 }

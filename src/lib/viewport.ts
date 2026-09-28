@@ -13,6 +13,8 @@ vv?.addEventListener('resize', update)
 vv?.addEventListener('scroll', update)
 update()
 
+export const isTouchScreen = () => matchMedia('(pointer: coarse)').matches
+
 export const standalone =
   matchMedia('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true
 

@@ -30,6 +30,7 @@ import {
 import { useDocumentTitle, useIsDark } from '../lib/theme'
 import type { Users } from '../lib/types'
 import { useChat } from '../lib/useChat'
+import { isTouchScreen } from '../lib/viewport'
 import { Chart, palette, type Palette } from '../stats/Chart'
 
 const GRAINS: { v: Grain; label: string }[] = [
@@ -278,7 +279,6 @@ function Summary({ t, stats, member }: { t: Tally; stats: ChatStats; member?: nu
 /** 默认显示最近这么多个桶，其余拖动下方滑块查看 */
 const VISIBLE: Record<Grain, number> = { day: 60, week: 40, month: 36 }
 const MIN_BARS = 7
-const coarse = () => matchMedia('(pointer: coarse)').matches
 
 interface PinchStart {
   start: number
@@ -329,7 +329,7 @@ function usePinchZoom(bars: number) {
       apply(start, start + span)
       return m
     },
-    { target: box, enabled: coarse(), eventOptions: { passive: false }, pointer: { touch: true } },
+    { target: box, enabled: isTouchScreen(), eventOptions: { passive: false }, pointer: { touch: true } },
   )
   return { box, onReady }
 }
@@ -370,7 +370,7 @@ function Trend({ stats, t, member }: { stats: ChatStats; t: Tally; member: boole
           { type: 'value', splitNumber: 4, minInterval: member ? undefined : 1, max: member ? 100 : undefined, splitLine: { show: false }, axisLabel: { color: p.label2, formatter: member ? '{value}%' : '{value}' } },
         ],
         dataZoom: [
-          { type: 'inside', start, end: 100, minValueSpan: MIN_BARS - 1, zoomLock: coarse(), zoomOnMouseWheel: true, moveOnMouseMove: false, moveOnMouseWheel: false, preventDefaultMouseMove: false },
+          { type: 'inside', start, end: 100, minValueSpan: MIN_BARS - 1, zoomLock: isTouchScreen(), zoomOnMouseWheel: true, moveOnMouseMove: false, moveOnMouseWheel: false, preventDefaultMouseMove: false },
           {
             type: 'slider',
             start,

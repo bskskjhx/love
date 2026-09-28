@@ -16,7 +16,7 @@ export interface Track {
   name: string
 }
 
-export interface PlayerState {
+interface PlayerState {
   track: Track | null
   playing: boolean
   time: number
@@ -58,7 +58,7 @@ const titleOf = (t: Track) => {
 }
 export { titleOf as trackTitle }
 
-export function play(track: Track, at = 0) {
+function play(track: Track, at = 0) {
   const a = el()
   const file = track.msg.media?.file
   if (!file) return

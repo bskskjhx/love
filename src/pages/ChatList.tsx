@@ -15,7 +15,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useDrag } from '@use-gesture/react'
 import { useLongPress } from '../lib/longPress'
 import { navigate, paths } from '../lib/router'
-import { blurActiveInput, standalone } from '../lib/viewport'
+import { blurActiveInput, isTouchScreen, standalone } from '../lib/viewport'
 import { serviceText } from '../lib/text'
 import { setGlassTint, setTheme, useDocumentTitle, useGlassTint, useTheme, type ThemePref } from '../lib/theme'
 import type { ChatSummary, SiteIndex } from '../lib/types'
@@ -33,7 +33,6 @@ let savedScroll = 0
 type Filter = 'all' | 'unread' | 'pinned'
 const SPRING = { type: 'spring', stiffness: 520, damping: 42, mass: 0.9 } as const
 const MIN_REFRESH_MS = 700
-const coarse = () => matchMedia('(pointer: coarse)').matches
 
 const chatKey = (c: ChatSummary) => c.username ?? String(c.id)
 
@@ -147,7 +146,7 @@ export function ChatListPage() {
       />
       <PullToRefresh
         onRefresh={refresh}
-        isPullable={coarse()}
+        isPullable={isTouchScreen()}
         pullDownThreshold={64}
         maxPullDownDistance={110}
         resistance={2}
